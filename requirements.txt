@@ -6,3 +6,6 @@ anthropic
 google-genai
 
 python-dotenv
+
+pandas
+openpyxl

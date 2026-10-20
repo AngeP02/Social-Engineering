@@ -40,8 +40,8 @@ DURATA_TARGET_MINUTI = 10
 
 CHAT_CONFIG: dict[str, dict] = {
     "chat_1": {"modalita": "controllo", "numero": 1, "etichetta": "Chat 1 — Assistente A"},
-    "chat_2": {"modalita": "velato",    "numero": 2, "etichetta": "Chat 2 — Assistente B"},
-    "chat_3": {"modalita": "diretto",   "numero": 3, "etichetta": "Chat 3 — Assistente C"},
+    "chat_2": {"modalita": "velato", "numero": 2, "etichetta": "Chat 2 — Assistente B"},
+    "chat_3": {"modalita": "diretto", "numero": 3, "etichetta": "Chat 3 — Assistente C"},
 }
 
 FASE_DOPO_CHAT: dict[str, str] = {
@@ -148,7 +148,7 @@ section[Dati-testid="stSidebar"] { display: none !important; }
     color: #166534; font-size: 0.95rem; margin-top: 20px;
 }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 
 def _init_sessione() -> None:
@@ -158,7 +158,7 @@ def _init_sessione() -> None:
         "sessione_profilazione": None,
         "sessione_chat_1": None,
         "sessione_chat_2": None,
-        "sessione_chat_3":  None,
+        "sessione_chat_3": None,
         "timestamp_inizio_chat": None,
     }
     for chiave, valore in defaults.items():
@@ -249,14 +249,12 @@ def _render_messaggi(messaggi: list[dict]) -> None:
                 f'<div class="chat-wrapper-ai">'
                 f'<div class="chat-bolla-ai"> {contenuto}</div>'
                 f'</div>',
-                unsafe_allow_html=True,
             )
         elif ruolo == "utente":
             st.markdown(
                 f'<div class="chat-wrapper-utente">'
                 f'<div class="chat-bolla-utente">{contenuto}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
+                f'</div>'
             )
 
 
@@ -281,7 +279,7 @@ def _render_step_flusso(fase_corrente: str) -> None:
         parti.append('<span class="step-sep">›</span>')
 
     html = '<div class="step-flusso">' + "".join(parti[:-1]) + '</div>'
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(html)
 
 
 def _fase_precedente(fase: str, corrente: str) -> bool:
@@ -308,9 +306,7 @@ def _render_timer(timestamp_inizio: float) -> None:
     st.markdown(
         f'<div class="timer-box {css_extra}">'
         f'⏱ Tempo conversazione: {trascorsi_min:02d}:{trascorsi_s:02d}{nota}'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'</div>')
 
 def _fase_icona(fase: str) -> str:
     return {
@@ -327,10 +323,8 @@ def _fase_icona(fase: str) -> str:
     }.get(fase, "❓")
 
 def pagina_selezione() -> None:
-    st.markdown('<div class="titolo-studio"> Studio sull\'Intelligenza Artificiale</div>',
-                unsafe_allow_html=True)
-    st.markdown('<div class="sottotitolo">Seleziona il tuo nome per accedere alla tua area personale.</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="titolo-studio"> Studio sull\'Intelligenza Artificiale</div>')
+    st.markdown('<div class="sottotitolo">Seleziona il tuo nome per accedere alla tua area personale.</div>')
 
     partecipanti = leggi_tutti_partecipanti()
     if not partecipanti:
@@ -414,16 +408,14 @@ def _render_item_likert(item, chiave_stato: str) -> Optional[int]:
 def pagina_t0() -> None:
     pid = st.session_state.partecipante_id
 
-    st.markdown('<div class="titolo-studio"> Questionario Iniziale</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titolo-studio"> Questionario Iniziale</div>')
     _render_step_flusso("t0")
     st.markdown(
         '<div class="istruzione">'
         'Le seguenti domande riguardano le tue opinioni su diversi argomenti. '
         'Non ci sono risposte giuste o sbagliate. '
         'Rispondi in modo sincero basandoti sulla tua opinione attuale.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        '</div>')
 
     with st.expander("📏 Scala di risposta", expanded=False):
         col_scala = st.columns(7)
@@ -434,8 +426,7 @@ def pagina_t0() -> None:
     risposte_demografiche: dict[str, str] = {}
     tutti_compilati = True
 
-    st.markdown('<div class="sezione-header">Sezione A · B · C — Le tue opinioni</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="sezione-header">Sezione A · B · C — Le tue opinioni</div>')
     for dominio, (titolo, sottotitolo) in {
         "commerciale": ("Parte A: Commercio e acquisti",
                         "Pensa alle tue abitudini di acquisto."),
@@ -454,8 +445,7 @@ def pagina_t0() -> None:
                 risposte_likert[item.id] = valore
             st.markdown("")
 
-    st.markdown('<div class="sezione-header">Sezione D — Le tue abitudini di pensiero</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="sezione-header">Sezione D — Le tue abitudini di pensiero</div>')
     st.caption("Come ti approcci ai compiti mentali e alla riflessione.")
     for item in SEZIONE_D:
         valore = _render_item_likert(item, f"t0_{item.id}")
@@ -465,8 +455,7 @@ def pagina_t0() -> None:
             risposte_likert[item.id] = valore
         st.markdown("")
 
-    st.markdown('<div class="sezione-header">Sezione E — Informazioni su di te</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="sezione-header">Sezione E — Informazioni su di te</div>')
     for item in SEZIONE_E:
         if item.tipo == "numero":
             val = st.number_input(item.testo, min_value=18, max_value=99,
@@ -511,17 +500,14 @@ def pagina_t0() -> None:
 def pagina_profilazione() -> None:
     pid = st.session_state.partecipante_id
 
-    st.markdown('<div class="titolo-studio"> Conversazione con l\'assistente</div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="titolo-studio"> Conversazione con l\'assistente</div>')
     _render_step_flusso("profilazione")
     st.markdown(
         '<div class="istruzione">'
         'Stai per iniziare una breve conversazione con un assistente AI. '
         'Rispondi liberamente e in modo naturale. '
         'Non esistono risposte giuste o sbagliate.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        '</div>')
 
     if st.session_state.sessione_profilazione is None:
         nfc_score, frequenza_ai = _recupera_parametri_t0(pid)
@@ -547,9 +533,7 @@ def pagina_profilazione() -> None:
         st.markdown(
             f'<div class="progresso-box">'
             f'⏱ Invia almeno altri <strong>{rimanenti}</strong> messaggio/i per continuare.'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+            f'</div>')
 
     with st.form("form_chat_profilazione", clear_on_submit=True):
         testo = st.text_input(
@@ -585,9 +569,7 @@ def pagina_profilazione() -> None:
     st.markdown(
         f'<div class="turni-counter">'
         f'Messaggi inviati: {turni} / minimo {TURNI_MINIMI_PROFILAZIONE}'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'</div>')
 
 def pagina_chat_sperimentale(fase: str) -> None:
     pid  = st.session_state.partecipante_id
@@ -596,18 +578,14 @@ def pagina_chat_sperimentale(fase: str) -> None:
     numero_chat = cfg["numero"]
 
     st.markdown(
-        f'<div class="titolo-studio"> {cfg["etichetta"]}</div>',
-        unsafe_allow_html=True,
-    )
+        f'<div class="titolo-studio"> {cfg["etichetta"]}</div>')
     _render_step_flusso(fase)
     st.markdown(
         '<div class="istruzione">'
         'Stai per iniziare una conversazione con un assistente AI. '
         'Rispondi liberamente e in modo naturale. '
         f'Puoi concludere dopo almeno {TURNI_MINIMI_SPERIMENTALE} messaggi.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        '</div>')
 
     if st.session_state[chiave_sessione] is None:
         nfc_score, frequenza_ai  = _recupera_parametri_t0(pid)
@@ -647,9 +625,7 @@ def pagina_chat_sperimentale(fase: str) -> None:
         st.markdown(
             f'<div class="progresso-box">'
             f'⏱ Invia almeno altri <strong>{rimanenti}</strong> messaggio/i per poter concludere.'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+            f'</div>')
 
     with st.form(f"form_chat_{fase}", clear_on_submit=True):
         testo = st.text_input(
@@ -681,9 +657,7 @@ def pagina_chat_sperimentale(fase: str) -> None:
         f'<div class="turni-counter">'
         f'Messaggi inviati: {turni} | minimo {TURNI_MINIMI_SPERIMENTALE} | '
         f'massimo {TURNI_MASSIMI_UTENTE} (ancora {turni_rimasti_al_max})'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'</div>')
 
 
 def _gestisci_conclusione_chat(
@@ -709,9 +683,7 @@ def _gestisci_conclusione_chat(
             '<div class="chat-completata-box">'
             ' Conversazione completata.<br><br>'
             'Clicca il pulsante qui sotto per continuare.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+            '</div>')
         if st.button("Continua →", type="primary", use_container_width=True):
             st.rerun()
     else:
@@ -721,7 +693,7 @@ def _gestisci_conclusione_chat(
 def pagina_t1() -> None:
     pid = st.session_state.partecipante_id
 
-    st.markdown('<div class="titolo-studio"> Questionario Finale</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titolo-studio"> Questionario Finale</div>')
     _render_step_flusso("t1")
     st.markdown(
         '<div class="istruzione">'
@@ -729,9 +701,7 @@ def pagina_t1() -> None:
         'Ti chiediamo ora di rispondere ad alcune domande sulle tue opinioni attuali '
         'e sull\'esperienza che hai appena vissuto. '
         'Non ci sono risposte giuste o sbagliate.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        '</div>')
 
     with st.expander(" Scala di risposta", expanded=False):
         col_scala = st.columns(7)
@@ -742,7 +712,7 @@ def pagina_t1() -> None:
     tutti_compilati = True
 
     for id_sezione, titolo_ui, items in SEZIONI_T1:
-        st.markdown(f'<div class="sezione-header">{titolo_ui}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sezione-header">{titolo_ui}</div>')
 
         # Contestualizzazione per sezione A ripetuta
         if id_sezione == "A":
@@ -786,9 +756,7 @@ def pagina_t2() -> None:
     pid = st.session_state.partecipante_id
 
     st.markdown(
-        '<div class="titolo-studio">Questionario di Follow-up</div>',
-        unsafe_allow_html=True,
-    )
+        '<div class="titolo-studio">Questionario di Follow-up</div>')
     _render_step_flusso("t2")
 
     st.markdown(
@@ -797,23 +765,19 @@ def pagina_t2() -> None:
         Rispondi alle seguenti domande in base alla tua opinione attuale e alla
         tua esperienza. Non ci sono risposte giuste o sbagliate.
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """)
 
     with st.expander("Scala di risposta", expanded=False):
         colscala = st.columns(7)
         for i, (val, etich) in enumerate(SCALA_LIKERT.items()):
-            colscala[i].markdown(f"**{val}**<br>{etich}", unsafe_allow_html=True)
+            colscala[i].markdown(f"**{val}**<br>{etich}")
 
     risposte_likert: dict[str, int] = {}
     tutti_compilati = True
 
     for id_sezione, titolo_ui, items in SEZIONI_T1:
         st.markdown(
-            f'<div class="sezione-header">{titolo_ui}</div>',
-            unsafe_allow_html=True,
-        )
+            f'<div class="sezione-header">{titolo_ui}</div>')
 
         if id_sezione == "A":
             st.caption(
@@ -865,9 +829,7 @@ def pagina_in_sviluppo(fase: str) -> None:
         f'<strong>Fase: {fase.replace("_", " ").upper()}</strong><br><br>'
         f'Questa sezione è in fase di sviluppo.<br>'
         f'Il ricercatore ti contatterà per le istruzioni successive.'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'</div>')
     st.markdown("---")
     if st.button("← Torna alla selezione", use_container_width=True):
         st.session_state.partecipante_id   = None
@@ -876,14 +838,12 @@ def pagina_in_sviluppo(fase: str) -> None:
 
 
 def pagina_completato() -> None:
-    st.markdown('<div class="titolo-studio">🏁 Studio completato</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titolo-studio">🏁 Studio completato</div>')
     st.success("Hai completato tutte le fasi dello studio. Grazie per la tua partecipazione!")
     st.markdown(
         '<div class="istruzione">'
         'Puoi chiudere questa pagina. Il ricercatore ti contatterà per il debriefing.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        '</div>')
 
 def main() -> None:
     _init_sessione()
