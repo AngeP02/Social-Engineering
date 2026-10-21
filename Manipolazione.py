@@ -131,18 +131,30 @@ from Utils.database import storage_leggi_json
 def _carica_config_assegnamenti() -> dict:
     try:
         config = storage_leggi_json("config_assegnamenti.json")
-    except Exception as e:
-        print(e)
-        raise FileNotFoundError(
-            f"File degli assegnamenti non trovato su Supabase Storage "
-            f"(config_assegnamenti.json). Caricalo nel bucket 'files'. Errore: {e}"
+
+        if not isinstance(config, dict):
+            raise ValueError("Il file JSON non contiene un oggetto valido.")
+
+        partecipanti = config.get("partecipanti")
+
+        if not isinstance(partecipanti, dict):
+            raise ValueError(
+                "Nel JSON manca un oggetto 'partecipanti' valido."
+            )
+
+        st.success(
+            f"Configurazione caricata correttamente da Supabase. "
+            f"Partecipanti configurati: {len(partecipanti)}."
         )
 
-    partecipanti = config.get("partecipanti") if isinstance(config, dict) else None
-    if not isinstance(partecipanti, dict):
-        raise ValueError("Nel file di configurazione deve esserci un oggetto 'partecipanti'.")
-    return partecipanti
+        return partecipanti
 
+    except Exception as e:
+        st.error(
+            f"Errore nel caricamento della configurazione: "
+            f"{type(e).__name__}: {e}"
+        )
+        raise
 
 def _recupera_assegnamento_chat(partecipante_id: str, numero_chat: int) -> dict:
     """Restituisce l'assegnamento della chat per l'ID esatto presente nel database."""
@@ -811,6 +823,13 @@ def pagina_chat_sperimentale(fase: str) -> None:
         nfc_score, frequenza_ai  = _recupera_parametri_t0(pid)
         try:
             assegnamento = _recupera_assegnamento_chat(pid, numero_chat)
+            st.info(
+                f"Assegnamento recuperato: partecipante={pid}, "
+                f"chat={numero_chat}, "
+                f"modalità={assegnamento['modalita']}, "
+                f"dominio={assegnamento['dominio']}, "
+                f"LLM={assegnamento['llm']}"
+            )
         except (FileNotFoundError, ValueError, KeyError) as exc:
             st.error(f"Configurazione degli assegnamenti incompleta: {exc}")
             st.info(
