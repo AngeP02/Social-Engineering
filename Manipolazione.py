@@ -124,8 +124,7 @@ def _recupera_parametri_t0(partecipante_id: str) -> tuple[float, str]:
 
 
 # File esterno agli script: contiene gli assegnamenti sperimentali per ogni partecipante.
-PERCORSO_CONFIG_ASSEGNAMENTI = Path(__file__).resolve().with_name("config_assegnamenti.json")
-
+PERCORSO_CONFIG_ASSEGNAMENTI = Path(__file__).resolve().parent / "Utils" / "config_assegnamenti.json"
 
 def _carica_config_assegnamenti() -> dict:
     """Carica gli assegnamenti dal JSON esterno, senza imporre un numero fisso di partecipanti."""
@@ -780,12 +779,12 @@ def pagina_profilazione() -> None:
         try:
             sintetizza_e_salva_profilo(
                 partecipante_id=pid,
-                sessione_id=sessione.sessione_id,  # ← passa l'ID sessione già aperta
+                sessione_id=sessione.sessione_id,
                 salva_su_db=True,
             )
         except Exception as _e:
-            st.warning(f"Sintesi profilo non riuscita ({_e}). ...")
-
+            print(_e)
+            st.warning(f"Sintesi profilo non completata ({_e}). Si procede comunque.")
         aggiorna_fase(pid, "chat_1")
         st.session_state.sessione_profilazione = None
         st.session_state.timestamp_inizio_chat = None

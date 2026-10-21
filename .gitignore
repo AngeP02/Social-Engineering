@@ -1,4 +1,4 @@
 .env
 ./Dati/Partecipanti.xlsx
 .streamlit/secrets.toml
-./config_assegnamenti.json
+./Utils/config_assegnamenti.json

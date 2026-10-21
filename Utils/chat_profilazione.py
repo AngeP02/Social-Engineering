@@ -232,6 +232,8 @@ class SessioneProfilazione:
         # --- Self-report: leggi dal DB e precarica lo schema ---
         risposte_sr = leggi_risposte_questionario(self.partecipante_id, "self_report")
         self._riassunto_sr = sintetizza_sr_per_prompt(risposte_sr)
+        print(f"   SR: {self._riassunto_sr[:150]!r}")
+        print(f"   T0: {self._riassunto_t0[:150]!r}")
 
         # Precarica lo schema con i dati SR se il profilo JSON esiste su disco;
         # altrimenti usa lo schema vuoto (la chat li raccoglierà via conversazione).

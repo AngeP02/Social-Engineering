@@ -51,7 +51,7 @@ def importa_da_excel(client: Client, file_path: Path) -> None:
     except Exception as e:
         print(f"ERRORE durante la lettura del file Excel: {e}")
         sys.exit(1)
-    colonne = [c.lower().strip() for c in df.columns]
+
     col_cognome = None
     col_nome = None
 
@@ -67,7 +67,20 @@ def importa_da_excel(client: Client, file_path: Path) -> None:
         print(f"Colonne trovate: {list(df.columns)}")
         sys.exit(1)
 
-    print(f"Trovate {len(df)} righe nell'Excel. Inizio importazione su Supabase...\n")
+    # 1. Legge gli ID già presenti nel database
+    print("Controllo dei partecipanti già presenti su Supabase...")
+
+    risposta = (
+        client.table("partecipanti")
+        .select("id")
+        .execute()
+    )
+
+    id_esistenti = {r["id"] for r in risposta.data}
+    print(f"Trovati {len(id_esistenti)} partecipanti già presenti nel database.\n")
+
+    nuovi = 0
+    saltati = 0
 
     for idx, row in df.iterrows():
         cognome = pulisci_testo(row[col_cognome])
@@ -80,39 +93,50 @@ def importa_da_excel(client: Client, file_path: Path) -> None:
         pid = genera_id_partecipante(cognome, nome, idx)
         nome_visualizzato = f"{cognome} {nome}".strip() if (cognome or nome) else pid
 
+        # 2. Se esiste già, non lo tocca
+        if pid in id_esistenti:
+            print(f" - Riga {idx + 2}: '{nome_visualizzato}' già presente. Salto...")
+            saltati += 1
+            continue
+
         profilo_json = {
             "cognome": cognome,
             "nome": nome,
-            "dettagli_extra": {col: str(val) for col, val in row.items() if not pd.isna(val)}
+            "dettagli_extra": {
+                col: str(val)
+                for col, val in row.items()
+                if not pd.isna(val)
+            }
         }
+
         try:
-            client.table("partecipanti").upsert(
+            client.table("partecipanti").insert(
                 {
                     "id": pid,
                     "nome_visualizzato": nome_visualizzato,
                     "fase_corrente": "non_iniziato",
-                },
-                on_conflict="id",
+                }
             ).execute()
         except Exception as e:
-            print(f"  ✗ Riga {idx + 2} ({nome_visualizzato}): Errore inserimento 'partecipanti' — {e}")
+            print(f" ✗ Riga {idx + 2} ({nome_visualizzato}): Errore inserimento 'partecipanti' — {e}")
             continue
+
         try:
-            client.table("profili").upsert(
+            client.table("profili").insert(
                 {
                     "partecipante_id": pid,
                     "profilo_json": profilo_json,
                     "nome_file_origine": file_path.name,
-                },
-                on_conflict="partecipante_id",
+                }
             ).execute()
-            print(f"  ✓ Riga {idx + 2}: '{nome_visualizzato}' caricato con ID '{pid}'")
+            print(f" ✓ Riga {idx + 2}: '{nome_visualizzato}' aggiunto con ID '{pid}'")
+            nuovi += 1
         except Exception as e:
-            print(f"  ✗ Riga {idx + 2} ({nome_visualizzato}): Errore inserimento 'profili' — {e}")
+            print(f" ✗ Riga {idx + 2} ({nome_visualizzato}): Errore inserimento 'profili' — {e}")
 
     print("\nImportazione completata!")
-    print("Verifica su Supabase -> Table Editor -> tabelle 'partecipanti' e 'profili'")
-
+    print(f"Nuovi partecipanti inseriti: {nuovi}")
+    print(f"Partecipanti già presenti e saltati: {saltati}")
 
 if __name__ == "__main__":
     client = connetti()

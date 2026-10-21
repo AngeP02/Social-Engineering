@@ -1,110 +1,278 @@
-VERSIONE_PROMPT = "profilazione_v3"
+"""
+prompts_profilazione.py
+=======================
+Contiene:
+  - sintetizza_sr_per_prompt()   : ricostruisce domanda+risposta dal self-report per il LLM
+  - sintetizza_t0_per_prompt()   : ricostruisce domanda+risposta dal T0 per il LLM
+  - costruisci_prompt_profilazione() : system prompt per la chat di profilazione
+  - _serializza_stato_profilo()  : stato corrente del profilo JSON (usato nel prompt chat)
 
-TURNI_MINIMI_UTENTE = 2
+CORREZIONI rispetto alla versione precedente:
+  1. sintetizza_t0_per_prompt: ora passa TUTTI gli item con testo completo della domanda
+     (inclusi item neutri e sezione D/NFC), non solo 6 item selezionati con soglie.
+  2. sintetizza_sr_per_prompt: ora passa il testo integrale di ogni domanda + risposta
+     testuale completa, senza pre-calcolare aggregati (BFI, valori top-3) prima del LLM.
+  3. Corretta virgola mancante in CLUSTER_TEMATICI (bug di concatenazione silenzioso).
+"""
+
+from __future__ import annotations
+
+# ── import questionari (le domande vivono nei moduli Python, non nel DB) ──────
+import sys
+from pathlib import Path
+
+_RADICE = Path(__file__).resolve().parents[2]
+if str(_RADICE) not in sys.path:
+    sys.path.insert(0, str(_RADICE))
+
+from Utils.questionario_t0 import (
+    SEZIONE_A as T0_SEZIONE_A,
+    SEZIONE_D as T0_SEZIONE_D,
+    SEZIONE_E as T0_SEZIONE_E,
+    SCALA_LIKERT as T0_SCALA_LIKERT,
+)
+from Utils.questionario_self_report import (
+    SEZIONE_E_SR,
+    SEZIONE_P,
+    SEZIONE_Q,
+    SEZIONE_R,
+    SCALA_LIKERT_7 as SR_SCALA_LIKERT_7,
+)
+
+# ── costanti ──────────────────────────────────────────────────────────────────
+
+VERSIONE_PROMPT = "profilazione_v4"   # bump per tracciare la versione corretta
+
+TURNI_MINIMI_UTENTE = 0
 
 CLUSTER_TEMATICI = [
     "stress_e_lavoro",
     "relazioni_e_famiglia",
-    "vita_quotidiana"
+    "vita_quotidiana",          # FIX: virgola mancante nella versione precedente
     "salute_e_benessere",
     "finanze_e_consumi",
     "valori_e_opinioni",
 ]
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# sintetizza_sr_per_prompt
+# ─────────────────────────────────────────────────────────────────────────────
+
 def sintetizza_sr_per_prompt(risposte_sr: list[dict]) -> str:
     """
-    Sintetizza le risposte del self-report in testo leggibile dal modello
-    di profilazione. Usato per precaricare il contesto prima della chat.
+    Ricostruisce domanda + risposta integrale per ogni item del self-report.
 
-    I dati SR hanno confidenza 0.85 (self-report dichiarato) — il modello
-    deve evitare di chiedere di nuovo cose già note e concentrarsi su ciò
-    che manca.
+    Il LLM estrattore riceve il testo completo della domanda originale
+    e la risposta con etichetta testuale — non aggregati pre-calcolati.
+
+    Struttura output (per ogni item):
+      <ID> [<campo_profilo>] — <testo domanda>
+         → <valore>/7 (<etichetta testuale>)    # per Likert
+         → <valore_testo>                        # per scelta/multi/numero
     """
     if not risposte_sr:
         return "(nessun dato self-report disponibile)"
 
-    mappa_num  = {r["id_item"]: r.get("valore_numerico") for r in risposte_sr if r.get("valore_numerico")}
-    mappa_test = {r["id_item"]: r.get("valore_testo")    for r in risposte_sr if r.get("valore_testo")}
+    # Mappa id_item → record dal DB
+    mappa_num  = {r["id_item"]: r.get("valore_numerico") for r in risposte_sr}
+    mappa_test = {r["id_item"]: r.get("valore_testo")    for r in risposte_sr}
 
-    righe = []
+    # Tutti gli item del questionario, nell'ordine di somministrazione
+    tutti_item = SEZIONE_E_SR + SEZIONE_P + SEZIONE_Q + SEZIONE_R
+    mappa_item = {it.id: it for it in tutti_item}
 
-    # -- Demografici --
-    demo = []
-    if "E1" in mappa_num:
-        demo.append(f"età {int(mappa_num['E1'])} anni")
-    if "E2" in mappa_test:
-        demo.append(f"genere: {mappa_test['E2']}")
-    if "E3" in mappa_test:
-        demo.append(f"istruzione: {mappa_test['E3']}")
-    if "E4" in mappa_test:
-        demo.append(f"professione: {mappa_test['E4']}")
-    if "E5" in mappa_test:
-        demo.append(f"area geografica: {mappa_test['E5']}")
-    if "E6" in mappa_test:
-        demo.append(f"frequenza viaggi: {mappa_test['E6']}")
-    if "E7" in mappa_test:
-        demo.append(f"hobby/interessi: {mappa_test['E7']}")
-    if demo:
-        righe.append("DATI DEMOGRAFICI (dichiarati — confidenza alta):")
-        righe.append("  " + ", ".join(demo))
-
-    # -- Big Five (BFI-10, scala 1–7) --
-    # Accoppiamenti: E=P1inv+P6, A=P2+P7inv, C=P3inv+P8, N=P4inv+P9, O=P5inv+P10
-    def _media_bf(id1: str, inv1: bool, id2: str, inv2: bool) -> float | None:
-        v1 = mappa_num.get(id1)
-        v2 = mappa_num.get(id2)
-        if v1 is None or v2 is None:
-            return None
-        r1 = 8 - v1 if inv1 else v1
-        r2 = 8 - v2 if inv2 else v2
-        return round((r1 + r2) / 2, 1)
-
-    bf = {
-        "Estroversione":     _media_bf("P1", True,  "P6", False),
-        "Gradevolezza":      _media_bf("P2", False, "P7", True),
-        "Coscienziosità":    _media_bf("P3", True,  "P8", False),
-        "Nevroticismo":      _media_bf("P4", True,  "P9", False),
-        "Apertura":          _media_bf("P5", True,  "P10",False),
+    sezioni_output: dict[str, list[str]] = {
+        "P": [],   # Demografici e stile di vita
+        "Q": [],   # Personalità BFI-10
+        "R": [],   # Valori PVQ-10r
+        "S": [],   # Preoccupazioni WDQ (sezione R nel codice, ma label "R" occupata)
     }
-    bf_validi = {k: v for k, v in bf.items() if v is not None}
-    if bf_validi:
-        righe.append("\nPERSONALITÀ Big Five (scala 1–7, self-report):")
-        for tratto, val in bf_validi.items():
-            livello = "alto" if val >= 5.0 else ("basso" if val <= 3.0 else "medio")
-            righe.append(f"  {tratto}: {val} ({livello})")
 
-    # -- Valori PVQ (top 3) --
-    valori_map = {
-        "Q1": "autonomia", "Q2": "stimolazione", "Q3": "universalismo",
-        "Q4": "benevolenza", "Q5": "tradizione", "Q6": "conformismo",
-        "Q7": "sicurezza", "Q8": "riuscita", "Q9": "potere", "Q10": "edonismo",
+    # Mappatura sezione item → bucket di output
+    bucket_map = {
+        "P": "P",   # Demografici (SEZIONE_E_SR ha sezione="P")
+        "Q": "Q",   # BFI-10
+        "R": "R",   # PVQ-10r
+        "S": "S",   # WDQ (SEZIONE_R ha sezione="S")
     }
-    valori_score = {
-        nome: mappa_num[id_] for id_, nome in valori_map.items() if id_ in mappa_num
+
+    for item in tutti_item:
+        valore_num  = mappa_num.get(item.id)
+        valore_test = mappa_test.get(item.id)
+
+        # Salta item non risposti
+        if valore_num is None and not valore_test:
+            continue
+
+        # Etichetta campo profilo
+        campo = item.campo_profilo or ""
+        sotto = item.sottocampo or ""
+        label_campo = f"{campo}.{sotto}" if sotto else campo
+
+        prefisso = f"{item.id}"
+        if label_campo:
+            prefisso += f" [{label_campo}]"
+        prefisso += f" — {item.testo}"
+
+        if item.tipo == "likert7" and valore_num is not None:
+            etichetta = SR_SCALA_LIKERT_7.get(valore_num, str(valore_num))
+            inv_nota  = " [item invertito — punteggio da correggere]" if item.invertito else ""
+            riga = f"{prefisso}\n   → {valore_num}/7 ({etichetta}){inv_nota}"
+        elif item.tipo == "numero" and valore_num is not None:
+            riga = f"{prefisso}\n   → {valore_num}"
+        elif valore_test:
+            riga = f"{prefisso}\n   → {valore_test}"
+        else:
+            continue
+
+        bucket = bucket_map.get(item.sezione, "P")
+        sezioni_output[bucket].append(riga)
+
+    # Intestazioni per sezione
+    intestazioni = {
+        "P": "── DATI DEMOGRAFICI E STILE DI VITA (dichiarati, confidenza 0.85) ──",
+        "Q": "── PERSONALITÀ BFI-10 (self-report, scala 1–7) ──",
+        "R": "── VALORI PVQ-10r (self-report, scala 1–7) ──",
+        "S": "── PREOCCUPAZIONI WDQ-3r (self-report, scala 1–7) ──",
     }
-    if valori_score:
-        top3 = sorted(valori_score, key=lambda k: valori_score[k], reverse=True)[:3]
-        righe.append(f"\nVALORI DOMINANTI (PVQ): {', '.join(top3)}")
 
-    # -- Preoccupazioni WDQ --
-    preoc_map = {"R1": "salute", "R2": "economia", "R3": "lavoro/carriera"}
-    preoc = {nome: mappa_num[id_] for id_, nome in preoc_map.items() if id_ in mappa_num}
-    if preoc:
-        primaria = max(preoc, key=lambda k: preoc[k])
-        righe.append(f"\nPREOCCUPAZIONE PRIMARIA (WDQ): {primaria} "
-                     f"(score {preoc[primaria]}/7)")
-        altre = {k: v for k, v in preoc.items() if k != primaria}
-        if altre:
-            righe.append("  Altre: " + ", ".join(f"{k} ({v}/7)" for k, v in altre.items()))
+    parti = []
+    for bucket in ["P", "Q", "R", "S"]:
+        righe = sezioni_output[bucket]
+        if righe:
+            parti.append(intestazioni[bucket])
+            parti.extend(righe)
 
-    righe.append(
-        "\nNOTA: questi dati sono dichiarati dal partecipante con alta affidabilità. "
-        "Non chiedere di nuovo informazioni già note. "
-        "Concentra la conversazione sulle categorie mancanti."
+    if not parti:
+        return "(nessun dato self-report disponibile)"
+
+    parti.append(
+        "\nNOTA: questi dati sono dichiarati direttamente dal partecipante (confidenza 0.85). "
+        "Le categorie già coperte non vanno chieste di nuovo durante la chat."
     )
 
-    return "\n".join(righe)
+    return "\n\n".join(parti)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# sintetizza_t0_per_prompt
+# ─────────────────────────────────────────────────────────────────────────────
+
+def sintetizza_t0_per_prompt(risposte_t0: list[dict]) -> str:
+    """
+    Ricostruisce domanda + risposta integrale per ogni item del questionario T0.
+
+    Passa al LLM estrattore:
+      - Sezione A: tutti gli item (attitudini + intenzioni comportamentali)
+        con dominio indicato [commerciale | sanitario | politico]
+      - Sezione D: tutti gli item NFC (Need for Cognition)
+      - Sezione E: item sulla frequenza d'uso AI
+
+    Tutti i valori vengono passati (inclusi i neutrali/4), perché
+    la neutralità è informativa per la profilazione.
+
+    Struttura output (per ogni item):
+      <ID> [<dominio>] [invertito?] — <testo domanda>
+         → <valore>/7 (<etichetta testuale>)
+    """
+    if not risposte_t0:
+        return "(nessun dato T0 disponibile)"
+
+    mappa_num  = {r["id_item"]: r.get("valore_numerico") for r in risposte_t0}
+    mappa_test = {r["id_item"]: r.get("valore_testo")    for r in risposte_t0}
+
+    tutti_item_t0 = T0_SEZIONE_A + T0_SEZIONE_D + T0_SEZIONE_E
+    mappa_item    = {it.id: it for it in tutti_item_t0}
+
+    def _formatta_item(item) -> str | None:
+        valore_num  = mappa_num.get(item.id)
+        valore_test = mappa_test.get(item.id)
+
+        if valore_num is None and not valore_test:
+            return None
+
+        # Costruisci prefisso con metadati
+        meta_parti = []
+        if getattr(item, "dominio", None):
+            meta_parti.append(item.dominio)
+        if getattr(item, "invertito", False):
+            meta_parti.append("invertito")
+        meta = f" [{', '.join(meta_parti)}]" if meta_parti else ""
+
+        prefisso = f"{item.id}{meta} — {item.testo}"
+
+        if item.tipo == "likert" and valore_num is not None:
+            etichetta = T0_SCALA_LIKERT.get(valore_num, str(valore_num))
+            return f"{prefisso}\n   → {valore_num}/7 ({etichetta})"
+        elif valore_test:
+            return f"{prefisso}\n   → {valore_test}"
+        elif valore_num is not None:
+            return f"{prefisso}\n   → {valore_num}"
+        return None
+
+    # ── Sezione A: attitudini e intenzioni per dominio ──
+    righe_A: dict[str, list[str]] = {
+        "commerciale": [],
+        "sanitario":   [],
+        "politico":    [],
+    }
+    for item in T0_SEZIONE_A:
+        riga = _formatta_item(item)
+        if riga:
+            dominio = getattr(item, "dominio", None) or "altro"
+            righe_A.setdefault(dominio, []).append(riga)
+
+    # ── Sezione D: NFC ──
+    righe_D: list[str] = []
+    for item in T0_SEZIONE_D:
+        riga = _formatta_item(item)
+        if riga:
+            righe_D.append(riga)
+
+    # ── Sezione E: frequenza AI ──
+    righe_E: list[str] = []
+    for item in T0_SEZIONE_E:
+        riga = _formatta_item(item)
+        if riga:
+            righe_E.append(riga)
+
+    # ── Assemblaggio output ──
+    parti = []
+
+    if any(righe_A.values()):
+        parti.append("── SEZIONE A — ATTITUDINI E INTENZIONI (scala 1–7) ──")
+        for dominio, righe in righe_A.items():
+            if righe:
+                parti.append(f"  Dominio: {dominio.upper()}")
+                parti.extend(righe)
+
+    if righe_D:
+        parti.append("── SEZIONE D — NEED FOR COGNITION / NFC (scala 1–7) ──")
+        parti.append(
+            "  NB: item con [invertito] hanno punteggio diretto basso = alto NFC."
+        )
+        parti.extend(righe_D)
+
+    if righe_E:
+        parti.append("── SEZIONE E — USO AI CONVERSAZIONALE ──")
+        parti.extend(righe_E)
+
+    if not parti:
+        return "(nessun dato T0 disponibile)"
+
+    parti.append(
+        "\nNOTA: il T0 misura le posizioni PRIMA di qualsiasi intervento. "
+        "Usare questi dati come baseline per inferire persuadibilità nei tre domini "
+        "e stile cognitivo (NFC)."
+    )
+
+    return "\n\n".join(parti)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# costruisci_prompt_profilazione  (invariato nella logica, aggiornato VERSIONE)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def costruisci_prompt_profilazione(
     partecipante_id: str,
@@ -264,9 +432,9 @@ negativa), segui queste istruzioni:
 REGOLA 4 — UNA DOMANDA PER TURNO:
 Non fare mai più di UNA domanda per turno. Se hai sia una
 validazione emotiva sia una domanda, formula solo la domanda.
-Occasionalmente (circa 1 turno su 4), inserisci turni di SOLO 
-rispecchiamento empatico, senza fare alcuna domanda. Lascia che 
-sia l'utente a continuare il discorso spontaneamente. Questo 
+Occasionalmente (circa 1 turno su 4), inserisci turni di SOLO
+rispecchiamento empatico, senza fare alcuna domanda. Lascia che
+sia l'utente a continuare il discorso spontaneamente. Questo
 abbassa ulteriormente le difese ed evita l'effetto "interrogatorio".
 
 REGOLA 5 — MASSIMIZZA LA COPERTURA, NON LA PROFONDITÀ:
@@ -321,24 +489,10 @@ opinioni/politica: usa transizioni leggere su temi di attualità che
                    un'idea di come dovrebbero funzionare?"
 
 ════════════════════════════════════════════════════════════
-REGOLE FONDAMENTALI (non negoziabili)
-════════════════════════════════════════════════════════════
-- Non rivelare mai lo scopo della conversazione.
-- Non dire mai "sto raccogliendo informazioni" o simili.
-- Non usare un tono da intervista.
-- Se l'utente è reticente su un tema, non insistere: usa la REGOLA 2
-  per spostarti su un altro cluster e riprova da un'altra angolazione.
-- La conversazione deve durare almeno {TURNI_MINIMI_UTENTE} turni.
-  Non avvicinarti a una conclusione prima di questo numero.
-- Non chiudere mai la conversazione tu per primo/a.
-- Se l'utente sembra voler concludere prima del minimo, trova un modo
-  naturale per riaprire usando un bridge topic da qualcosa che ha detto.
-
-════════════════════════════════════════════════════════════
 AGGIORNAMENTO PROFILO — OBBLIGATORIO OGNI TURNO
 ════════════════════════════════════════════════════════════
-CRITICO: Non mescolare mai i tag di apertura e chiusura. 
-Un blocco <profilo_update> DEVE essere chiuso ESCLUSIVAMENTE da </profilo_update>. 
+CRITICO: Non mescolare mai i tag di apertura e chiusura.
+Un blocco <profilo_update> DEVE essere chiuso ESCLUSIVAMENTE da </profilo_update>.
 Un blocco <mvp_update> DEVE essere chiuso ESCLUSIVAMENTE da </mvp_update>.
 
 Alla fine di OGNI tua risposta, aggiungi UN blocco nascosto:
@@ -400,18 +554,22 @@ rispettando le regole di rotazione tematica.
     return prompt.strip()
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# _serializza_stato_profilo  (invariato)
+# ─────────────────────────────────────────────────────────────────────────────
+
 def _serializza_stato_profilo(profilo: dict) -> str:
     sezioni = [
-        ("non_sensitive_attributes", "ATTRIBUTI NON SENSIBILI"),
-        ("private_attributes", "ATTRIBUTI PRIVATI"),
-        ("psychological_attributes", "ATTRIBUTI PSICOLOGICI"),
-        ("sensitive_attributes", "ATTRIBUTI SENSIBILI"),
+        ("non_sensitive_attributes",       "ATTRIBUTI NON SENSIBILI"),
+        ("private_attributes",             "ATTRIBUTI PRIVATI"),
+        ("psychological_attributes",       "ATTRIBUTI PSICOLOGICI"),
+        ("sensitive_attributes",           "ATTRIBUTI SENSIBILI"),
         ("manipulation_vulnerability_profile", "MVP"),
     ]
 
     righe_completate = []
-    righe_parziali = []
-    righe_mancanti = []
+    righe_parziali   = []
+    righe_mancanti   = []
 
     def _processa_campo(nome: str, campo: dict | None):
         if not isinstance(campo, dict):
@@ -453,34 +611,3 @@ def _serializza_stato_profilo(profilo: dict) -> str:
     righe.insert(0, f"Copertura attuale: {n_completate}/{n_totale} categorie completate.\n")
 
     return "\n".join(righe) if righe else "(profilo vuoto)"
-
-
-def sintetizza_t0_per_prompt(risposte_t0: list[dict]) -> str:
-    if not risposte_t0:
-        return "(nessun dato T0 disponibile)"
-
-    mappa = {r["id_item"]: r.get("valore_numerico") for r in risposte_t0
-             if r.get("valore_numerico")}
-
-    righe = []
-    soglia_bassa = 3
-    soglia_alta  = 5
-
-    item_labels = {
-        "A1": "fiducia AI commerciale",
-        "A3": "apertura cambio marca su consiglio AI",
-        "B1": "valutazione screening preventivi",
-        "B2": "evitamento informazioni sanitarie",
-        "C1": "supporto tassa patrimoniale",
-        "C3": "apertura al cambiamento su politica",
-    }
-
-    for id_item, label in item_labels.items():
-        v = mappa.get(id_item)
-        if v is not None:
-            if v <= soglia_bassa:
-                righe.append(f"- {label}: posizione bassa ({v}/7)")
-            elif v >= soglia_alta:
-                righe.append(f"- {label}: posizione alta ({v}/7)")
-
-    return "\n".join(righe) if righe else "(posizioni T0 nella media, nessuna salienza)"

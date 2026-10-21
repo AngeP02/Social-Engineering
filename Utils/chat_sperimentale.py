@@ -20,8 +20,8 @@ from Utils.database import (
 )
 
 _RADICE_PROGETTO = Path(__file__).resolve().parents[1]
-_DIR_PROFILI = _RADICE_PROGETTO / "Dati" / "profili_json_completi"
-
+_DIR_OUTPUT = _RADICE_PROGETTO / "output"
+_DIR_PROFILI_VECCHIA = _RADICE_PROGETTO / "Dati" / "profili_json_completi"
 
 _RE_METRICHE = re.compile(
     r"<metriche_turno>(.*?)</metriche_turno>",
@@ -51,11 +51,17 @@ def _parse_metriche(risposta_raw: str) -> Optional[dict]:
     return None
 
 def carica_profilo_json(partecipante_id: str) -> dict:
-
+    """
+    Cerca il profilo completo del partecipante nella cartella di output
+    o, come fallback, nei vecchi percorsi.
+    """
     candidati = [
-        _DIR_PROFILI / f"PERSONA_{partecipante_id}.json",
-        _DIR_PROFILI / f"{partecipante_id}.json",
-        _DIR_PROFILI / "PERSONA_ESEMPIO.json",
+        # Percorso corretto basato sulla struttura output/COGNOME_NOME/profilo_completo.json
+        _DIR_OUTPUT / partecipante_id / "profilo_completo.json",
+        # Vecchi percorsi di fallback nel caso servano
+        _DIR_PROFILI_VECCHIA / f"PERSONA_{partecipante_id}.json",
+        _DIR_PROFILI_VECCHIA / f"{partecipante_id}.json",
+        _DIR_PROFILI_VECCHIA / "PERSONA_ESEMPIO.json",
     ]
 
     for percorso in candidati:

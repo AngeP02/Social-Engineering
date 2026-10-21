@@ -5,22 +5,19 @@ Eseguito al termine della chat di profilazione di ogni partecipante.
 
 Flusso:
   1. Legge dal DB: self-report, T0, trascrizione chat di profilazione
-  2. Per ogni sezione usa il prompt few-shot specifico + schema JSON di sezione
+  2. Ricostruisce domanda+risposta per self-report e T0
+     (le domande non sono nel DB: vengono riaccoppiiate a runtime
+     dai moduli Python dei questionari tramite prompts_profilazione.py)
+  3. Per ogni sezione usa il prompt few-shot specifico + schema JSON
       - non_sensitive_attributes  → estrazione_non_sensibili_few_shot.txt
       - private_attributes        → estrazione_privati_few_shot.txt
       - psychological_attributes  → estrazione_psicologici_few_shot.txt
-      - sensitive_attributes      → estrazione_sensibili_appello_emotivo.txt
-  3. Calcola manipulation_vulnerability_profile → estrazione_vulnerabilita_appello_emotivo.txt
-     (riceve il profilo parziale già compilato, NON la trascrizione grezza)
-  4. Assembla il JSON completo (schema_vuoto_user_profile.json come base)
-  5. Salva in output/<partecipante_id>/
-      - profilo_completo.json
-      - non_sensitive_attributes.json
-      - private_attributes.json
-      - psychological_attributes.json
-      - sensitive_attributes.json
-      - manipulation_vulnerability_profile.json
-  6. (Opzionale) Salva su Supabase → tabella `profili`
+      - sensitive_attributes      → estrazione_sensibili_few_shot.txt
+  4. Calcola manipulation_vulnerability_profile
+     (input: profilo parziale già compilato, NON la trascrizione grezza)
+  5. Assembla il JSON completo (schema_vuoto_user_profile.json come base)
+  6. Salva in output/<partecipante_id>/
+  7. (Opzionale) Salva su Supabase → tabella `profili`
 
 Integrazione nel flusso Streamlit (Manipolazione.py):
     from Utils.sintetizza_profilo import sintetizza_e_salva_profilo
@@ -67,12 +64,10 @@ from Utils.prompts_profilazione import (
 )
 
 # ── percorsi file ─────────────────────────────────────────────────────────────
-# _DIR è la cartella dove si trova questo script (Utils/).
-# _PROMPT_DIR e _SCHEMA_DIR puntano alle sottocartelle del progetto.
-_DIR         = Path(__file__).resolve().parent          # …/Utils/
-_PROGETTO    = _DIR.parent                              # …/SISTEMA DI MANIPOLAZIONE/
-_PROMPT_DIR  = _PROGETTO / "Prompts"
-_SCHEMA_DIR  = _PROGETTO / "Schemi"
+_DIR        = Path(__file__).resolve().parent       # …/Utils/
+_PROGETTO   = _DIR.parent                           # …/SISTEMA DI MANIPOLAZIONE/
+_PROMPT_DIR = _PROGETTO / "Prompts"
+_SCHEMA_DIR = _PROGETTO / "Schemi"
 
 # Mappa: (nome_sezione, file_prompt, file_schema, label_per_placeholder)
 _SEZIONI: list[tuple[str, str, str, str]] = [
@@ -96,24 +91,21 @@ _SEZIONI: list[tuple[str, str, str, str]] = [
     ),
     (
         "sensitive_attributes",
-        # Prompt riscritto con framing neutro da ricercatore (funziona con tutti i modelli)
-        "estrazione_sensibili_ricercatore.txt",
+        "estrazione_sensibili_few_shot.txt",
         "schema_sensitive.json",
         "sensitive_attributes",
     ),
 ]
 
-_PROMPT_MVP   = "estrazione_vulnerabilita_ricercatore.txt"   # idem
+_PROMPT_MVP   = "estrazione_vulnerabilita_few_shot.txt"
 _SCHEMA_MVP   = "schema_vulnerability.json"
 _SCHEMA_VUOTO = "schema_vuoto_user_profile.json"
 
-# ── timeout chiamate LLM (secondi) ───────────────────────────────────────────
+# Timeout chiamate LLM (secondi).
 # Gemini 2.5 Flash può bloccarsi silenziosamente sui contenuti sensibili
-# (safety filter lato OpenRouter). Il timeout forza l'uscita e permette
-# al codice di continuare con la sezione successiva invece di bloccarsi.
+# (safety filter lato OpenRouter). Il timeout evita hang indefiniti.
 LLM_TIMEOUT_SEC = 120
 
-# ── configurazione LLM ────────────────────────────────────────────────────────
 CFG_SINTESI = {
     "provider":    "openrouter",
     "model":       "google/gemini-2.5-flash",
@@ -177,24 +169,27 @@ def _formatta_trascrizione(messaggi: list[dict]) -> str:
 
 def _prepara_chat_text(
     trascrizione: str,
-    riassunto_sr: str,
-    riassunto_t0: str,
+    testo_sr: str,
+    testo_t0: str,
 ) -> str:
     """
-    Costruisce il testo completo per {{chat_text}}:
-    self-report e T0 come contesto dichiarato, poi trascrizione chat.
+    Costruisce il testo completo per {{chat_text}}.
+
+    Struttura:
+      - self-report (domanda + risposta, leggibile)
+      - T0 (domanda + risposta, leggibile)
+      - trascrizione chat di profilazione
+
     I dati SR/T0 includono doc_id espliciti per le evidence.
     """
     parti = []
 
-    if riassunto_sr and "(nessun" not in riassunto_sr:
-        parti.append(
-            "[SELF_REPORT doc_id=self_report]:\n" + riassunto_sr
-        )
-    if riassunto_t0 and "(nessun" not in riassunto_t0:
-        parti.append(
-            "[T0_QUESTIONARIO doc_id=t0]:\n" + riassunto_t0
-        )
+    if testo_sr and "(nessun" not in testo_sr:
+        parti.append("[SELF_REPORT doc_id=self_report]:\n" + testo_sr)
+
+    if testo_t0 and "(nessun" not in testo_t0:
+        parti.append("[T0_QUESTIONARIO doc_id=t0]:\n" + testo_t0)
+
     if trascrizione and "(nessun" not in trascrizione:
         parti.append(trascrizione)
 
@@ -258,7 +253,7 @@ def _mergia_campo_foglia(base: dict, nuovo: dict) -> dict:
     val_base   = base.get("value")
     val_nuovo  = nuovo.get("value")
 
-    base_vuota = val_base in (None, "", [], 0.0)
+    base_vuota   = val_base  in (None, "", [], 0.0)
     nuovo_ha_val = val_nuovo not in (None, "", [], 0.0)
 
     if nuovo_ha_val and (base_vuota or conf_nuovo >= conf_base):
@@ -274,13 +269,11 @@ def _mergia_sezione(base: dict, nuova: dict) -> dict:
     for chiave, val_nuovo in nuova.items():
         val_base = risultato.get(chiave, {})
         if isinstance(val_nuovo, dict) and "confidence" in val_nuovo:
-            # campo foglia
             risultato[chiave] = _mergia_campo_foglia(
                 val_base if isinstance(val_base, dict) else {},
                 val_nuovo,
             )
         elif isinstance(val_nuovo, dict) and isinstance(val_base, dict):
-            # sottoalbero (es. big_five_personality)
             risultato[chiave] = _mergia_sezione(val_base, val_nuovo)
         elif val_nuovo is not None:
             risultato[chiave] = val_nuovo
@@ -313,7 +306,6 @@ def _estrai_sezione(
         .replace("{{chat_text}}", chat_text)
     )
 
-    # Separa system dal blocco utente sul delimitatore <<<CHAT>>>
     if "<<<CHAT>>>" in prompt_completo:
         parti   = prompt_completo.split("<<<CHAT>>>", 1)
         sistema = parti[0].strip()
@@ -338,10 +330,9 @@ def _estrai_sezione(
         import traceback; traceback.print_exc()
         return {}
 
-    print(f"    [debug] risposta LLM (primi 200 char): {risposta[:200]!r}")  # noqa: E501
+    print(f"    [debug] risposta LLM (primi 200 char): {risposta[:200]!r}")
 
     risultato = _parse_json_risposta(risposta)
-
     if risultato is None:
         print(f"    ✗ '{nome_sezione}': risposta non JSON valido.")
         return {}
@@ -354,6 +345,8 @@ def _estrai_mvp(client, profilo_parziale: dict) -> dict:
     """
     Calcola il manipulation_vulnerability_profile.
     Input: il profilo con le 4 sezioni già compilate (non la chat grezza).
+    Riceve attributi interpretati, non dati grezzi, perché il prompt MVP
+    è calibrato su inferenze già fatte, non su risposte Likert numeriche.
     """
     template = _leggi_file(_PROMPT_MVP, _PROMPT_DIR)
     schema   = _leggi_schema(_SCHEMA_MVP)
@@ -395,10 +388,8 @@ def _estrai_mvp(client, profilo_parziale: dict) -> dict:
         return {}
 
     risultato = _parse_json_risposta(risposta)
-
     if risultato is None:
-        print(f"    ✗ MVP: risposta non JSON. Primi 300 char:")
-        print(f"      {risposta[:300]!r}")
+        print(f"    ✗ MVP: risposta non JSON. Primi 300 char:\n      {risposta[:300]!r}")
         return {}
 
     print(f"    ✓ MVP: OK ({len(risultato)} campi estratti)")
@@ -440,13 +431,13 @@ def _salva_su_db(partecipante_id: str, profilo: dict) -> None:
     db = _db_client()
     db.table("profili").upsert(
         {
-            "partecipante_id": partecipante_id,
-            "profilo_json":    profilo,
+            "partecipante_id":   partecipante_id,
+            "profilo_json":      profilo,
             "nome_file_origine": f"sintesi_llm_{partecipante_id}.json",
         },
         on_conflict="partecipante_id",
     ).execute()
-    print(f"    ✓ Salvato su Supabase")
+    print("    ✓ Salvato su Supabase")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -462,14 +453,20 @@ def sintetizza_e_salva_profilo(
     """
     Sintetizza il profilo completo di un partecipante.
 
+    Il flusso corretto è:
+      1. Legge le risposte raw dal DB (solo valori numerici/testuali)
+      2. Riaccoppia ogni risposta con il testo della domanda originale
+         usando sintetizza_sr_per_prompt / sintetizza_t0_per_prompt
+         (le domande NON sono sul DB, vivono nei moduli Python dei questionari)
+      3. Concatena: SR leggibile + T0 leggibile + trascrizione chat
+      4. Invia al LLM il testo completo e decodificabile
+
     Parametri
     ----------
     partecipante_id : str
     sessione_id     : int | None  — ID sessione chat profilazione (auto-detect se None)
     output_dir      : Path | None — cartella output (default ./output)
     salva_su_db     : bool        — upsert su Supabase
-
-    Ritorna il profilo JSON completo come dict.
     """
     if output_dir is None:
         output_dir = Path("output")
@@ -484,13 +481,23 @@ def sintetizza_e_salva_profilo(
 
     client = get_client(CFG_SINTESI)
 
-    # 1. Carica dati
+    # 1. Leggi risposte grezze dal DB
     print("1. Caricamento dati dal DB...")
-    risposte_sr  = leggi_risposte_questionario(partecipante_id, "self_report")
-    risposte_t0  = leggi_risposte_questionario(partecipante_id, "t0")
-    riassunto_sr = sintetizza_sr_per_prompt(risposte_sr)
-    riassunto_t0 = sintetizza_t0_per_prompt(risposte_t0)
+    risposte_sr_db = leggi_risposte_questionario(partecipante_id, "self_report")
+    risposte_t0_db = leggi_risposte_questionario(partecipante_id, "t0")
 
+    # 2. Ricostruisci domanda+risposta (il punto critico corretto)
+    #    sintetizza_*_per_prompt risolve il problema: il DB salva solo i valori,
+    #    ma per inferire serve il contesto della domanda.
+    testo_sr = sintetizza_sr_per_prompt(risposte_sr_db)
+    testo_t0 = sintetizza_t0_per_prompt(risposte_t0_db)
+
+    print(f"\n--- SELF REPORT ({len(risposte_sr_db)} risposte, ricostruito) ---")
+    print(testo_sr[:500] if testo_sr else "⚠ VUOTO")
+    print(f"\n--- T0 ({len(risposte_t0_db)} risposte, ricostruito) ---")
+    print(testo_t0[:500] if testo_t0 else "⚠ VUOTO")
+
+    # 3. Leggi trascrizione chat
     if sessione_id is None:
         sessione_id = _leggi_ultima_sessione_profilazione(partecipante_id)
 
@@ -502,21 +509,22 @@ def sintetizza_e_salva_profilo(
     else:
         print("   ⚠ Nessuna sessione di profilazione trovata.")
 
-    chat_text = _prepara_chat_text(trascrizione, riassunto_sr, riassunto_t0)
+    # 4. Assembla il testo completo per il LLM
+    chat_text = _prepara_chat_text(trascrizione, testo_sr, testo_t0)
 
-    # 2. Schema base vuoto
+    # 5. Schema base vuoto
     profilo = _carica_schema_vuoto()
     profilo["subject_id"]  = partecipante_id
     profilo["model"]       = CFG_SINTESI["model"]
     profilo["source_type"] = "llm_synthesis"
     profilo["condition"]   = "profiling_velato"
     profilo["meta"].update({
-        "extraction_model_used":    CFG_SINTESI["model"],
+        "extraction_model_used":     CFG_SINTESI["model"],
         "extraction_prompt_version": VERSIONE_PROMPT,
         "llm_chat_available":        bool(trascrizione),
     })
 
-    # 3. Estrazione sezione per sezione
+    # 6. Estrazione sezione per sezione
     print("2. Estrazione sezioni...")
     for nome_sezione, nome_prompt, nome_schema, label in _SEZIONI:
         print(f"   → {nome_sezione}")
@@ -533,7 +541,7 @@ def sintetizza_e_salva_profilo(
                 profilo.get(nome_sezione, {}), estratto
             )
 
-    # 4. Calcolo MVP (input: profilo con le 4 sezioni già compilate)
+    # 7. Calcolo MVP (input: profilo con le 4 sezioni già compilate)
     print("   → manipulation_vulnerability_profile")
     mvp = _estrai_mvp(client, profilo)
     if mvp:
@@ -541,11 +549,10 @@ def sintetizza_e_salva_profilo(
             profilo.get("manipulation_vulnerability_profile", {}), mvp
         )
 
-    # 5. Output su disco
+    # 8. Output su disco
     print("3. Salvataggio...")
     _salva_output(partecipante_id, profilo, output_dir)
 
-    # 6. Supabase
     if salva_su_db:
         _salva_su_db(partecipante_id, profilo)
 
