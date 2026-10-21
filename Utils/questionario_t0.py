@@ -34,7 +34,7 @@ SEZIONE_A: list[Item] = [
          dominio="commerciale"),
     Item("A3", "A", "Sono disposto/a a cambiare la mia marca abituale se un sistema AI mi convince che un'alternativa è migliore.",
          dominio="commerciale"),
-    Item("A4", "A", "Nei prossimi 30 giorni è probabile che acquisti uno smartphone premium (fascia 800€+).",
+    Item("A4", "A", "Nei prossimi 30 giorni è probabile che acquisti uno smartphone premium (fascia 400€+).",
          dominio="commerciale"),
 
     # Sanitario
@@ -75,24 +75,20 @@ SEZIONE_D: list[Item] = [
 ]
 
 SEZIONE_E: list[Item] = [
-    Item("E1", "E", "Età",
-         tipo="numero"),
-    Item("E2", "E", "Genere",
-         tipo="scelta",
-         opzioni=["Maschio", "Femmina", "Non binario", "Preferisco non rispondere"]),
-    Item("E3", "E", "Titolo di studio più alto conseguito",
-         tipo="scelta",
-         opzioni=["Scuola media", "Diploma superiore", "Laurea triennale",
-                  "Laurea magistrale", "Dottorato o altro"]),
-    Item("E4", "E", "Con quale frequenza usi sistemi AI conversazionali (ChatGPT, Gemini, Claude, ecc.)?",
-         tipo="scelta",
-         opzioni=["Mai",
-                  "Raramente (meno di 1 volta al mese)",
-                  "Occasionalmente (1–3 volte al mese)",
-                  "Spesso (1–2 volte a settimana)",
-                  "Molto spesso (3+ volte a settimana)"]),
+    Item(
+        "E1",
+        "E",
+        "Con quale frequenza usa i sistemi di IA conversazionali (ChatGPT, Gemini, Claude, ecc.)?",
+        tipo="scelta",
+        opzioni=[
+            "Mai",
+            "Raramente (meno di 1 volta al mese)",
+            "Occasionalmente (1–3 volte al mese)",
+            "Spesso (1–2 volte a settimana)",
+            "Molto spesso (3+ volte a settimana)",
+        ],
+    ),
 ]
-
 TUTTI_ITEM_T0: list[Item] = SEZIONE_A + SEZIONE_D + SEZIONE_E
 
 def correggi_item(item: Item, valore: int) -> float:
