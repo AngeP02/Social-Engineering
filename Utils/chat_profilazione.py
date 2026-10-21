@@ -7,10 +7,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-_RADICE = Path(__file__).resolve().parents[2]
-if str(_RADICE) not in sys.path:
-    sys.path.insert(0, str(_RADICE))
-
 from clients import get_client
 
 from Utils.prompts_profilazione import (

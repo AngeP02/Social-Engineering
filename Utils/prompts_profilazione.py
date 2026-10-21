@@ -21,9 +21,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_RADICE = Path(__file__).resolve().parents[2]
-if str(_RADICE) not in sys.path:
-    sys.path.insert(0, str(_RADICE))
 
 from Utils.questionario_t0 import (
     SEZIONE_A as T0_SEZIONE_A,
