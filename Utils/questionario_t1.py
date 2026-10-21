@@ -104,12 +104,12 @@ SEZIONE_L: list[Item] = [
 ]
 
 SEZIONI_T1: list[tuple[str, str, list[Item]]] = [
-    ("A",  "Sezione A — Le tue opinioni (aggiornate)", SEZIONE_A),
-    ("F",  "Sezione F — Intenzioni comportamentali", SEZIONE_F),
-    ("G",  "Sezione G — Fiducia nel sistema", SEZIONE_G),
-    ("H",  "Sezione H — Consapevolezza dell'influenza", SEZIONE_H),
-    ("I",  "Sezione I — Percezione della personalizzazione", SEZIONE_I),
-    ("L",  "Sezione L — Uso dei dati personali", SEZIONE_L),
+    ("A",  "Opinioni aggiornate", SEZIONE_A),
+    ("F",  "Intenzioni comportamentali", SEZIONE_F),
+    ("G",  "Fiducia nel sistema", SEZIONE_G),
+    ("H",  "Consapevolezza dell'influenza", SEZIONE_H),
+    ("I",  "Percezione della personalizzazione", SEZIONE_I),
+    ("L",  "Uso dei dati personali", SEZIONE_L),
 ]
 
 TUTTI_ITEM_T1: list[Item] = [

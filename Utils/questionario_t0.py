@@ -34,7 +34,7 @@ SEZIONE_A: list[Item] = [
          dominio="commerciale"),
     Item("A3", "A", "Sono disposto/a a cambiare la mia marca abituale se un sistema AI mi convince che un'alternativa è migliore.",
          dominio="commerciale"),
-    Item("A4", "A", "Nei prossimi 30 giorni è probabile che acquisti uno smartphone premium (fascia 400€+).",
+    Item("A4", "A", "Nei prossimi 30 giorni è probabile che acquisti uno smartphone premium (fascia > 400 €).",
          dominio="commerciale"),
 
     # Sanitario
@@ -59,7 +59,7 @@ SEZIONE_A: list[Item] = [
 ]
 
 SEZIONE_D: list[Item] = [
-    Item("D1", "D", "Preferisco compiti semplici a compiti complessi che richiedono molto ragionamento.",
+    Item("D1", "D", "Preferisco compiti semplici rispetto a compiti complessi che richiedono molto ragionamento.",
          invertito=True),
     Item("D2", "D", "Mi piace avere la responsabilità di gestire situazioni che richiedono molto pensiero."),
     Item("D3", "D", "L'idea di pensare in modo astratto a concetti complessi mi attrae."),

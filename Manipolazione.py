@@ -141,20 +141,14 @@ def _carica_config_assegnamenti() -> dict:
             raise ValueError(
                 "Nel JSON manca un oggetto 'partecipanti' valido."
             )
-
-        st.success(
-            f"Configurazione caricata correttamente da Supabase. "
-            f"Partecipanti configurati: {len(partecipanti)}."
-        )
-
         return partecipanti
 
     except Exception as e:
-        st.error(
+       print(
             f"Errore nel caricamento della configurazione: "
             f"{type(e).__name__}: {e}"
-        )
-        raise
+       )
+       raise
 
 def _recupera_assegnamento_chat(partecipante_id: str, numero_chat: int) -> dict:
     """Restituisce l'assegnamento della chat per l'ID esatto presente nel database."""
@@ -420,7 +414,7 @@ def pagina_selezione() -> None:
     with st.container(border=True):
         partecipanti = leggi_tutti_partecipanti()
         if not partecipanti:
-            st.error("Nessun partecipante trovato nel sistema. Contatta il ricercatore.")
+            print("Nessun partecipante trovato nel sistema. Contatta il ricercatore.")
             return
         st.markdown("Cerca partecipante")
         ricerca = st.text_input(label=" ",placeholder="Digitare nome o cognome")
@@ -478,10 +472,10 @@ def pagina_consenso() -> None:
     st.markdown("---")
     st.markdown("#### Informativa sulla partecipazione")
     st.markdown("""
-Il presente studio ha l'obiettivo di analizzare le dinamiche dell'interazione uomo-AI.
+Il presente studio ha l'obiettivo di analizzare le dinamiche dell'interazione uomo-macchina.
 
 **In cosa consiste la partecipazione:**
-- Compilazione un breve questionario conoscitivo.
+- Compilazione di un breve questionario conoscitivo.
 - Compilazione di un breve questionario preliminare sulle opinioni relative ai domini di studio.
 - Svolgimento di una conversazione iniziale di orientamento con un assistente virtuale.
 - Completamento di tre sessioni di interazione guidata con assistenti AI.
@@ -506,7 +500,7 @@ Il presente studio ha l'obiettivo di analizzare le dinamiche dell'interazione uo
 
 def pagina_self_report() -> None:
     pid = st.session_state.partecipante_id
-    st.header("Fase -> Questionario personale")
+    st.header("Questionario personale")
     st.info("Prima di iniziare l'esperimento è necessario rispondere a qualche domanda personale.")
     _render_step_flusso("self_report")
 
@@ -553,7 +547,7 @@ def pagina_self_report() -> None:
     st.markdown("---")
 
     if not tutti_compilati:
-        st.warning("Compila tutte le domande obbligatorie per continuare.")
+        st.warning("Compili tutte le domande obbligatorie per continuare.")
 
     if st.button(
             "Avanti →",
@@ -623,7 +617,7 @@ def pagina_t0() -> None:
             ),
             "politico": (
                 "Parte C: Politica e società",
-                "Si considerino i suoi pensieri su questioni politiche, economiche e sociali.",
+                "Si consideri il suo pensiero su questioni politiche, economiche e sociali.",
             ),
         }
 
@@ -707,10 +701,10 @@ def pagina_t0() -> None:
 
     st.markdown("---")
     if not tutti_compilati:
-        st.warning("Compila tutte le domande per continuare.")
+        st.warning("Compili tutte le domande per continuare.")
 
     if st.button(
-        "Invia le risposte e continua →",
+        "Invia le risposte e continua  →",
         type="primary",
         use_container_width=True,
         disabled=not tutti_compilati,
@@ -794,7 +788,6 @@ def pagina_profilazione() -> None:
             )
         except Exception as _e:
             print(_e)
-            st.warning(f"Sintesi profilo non completata ({_e}). Si procede comunque.")
         aggiorna_fase(pid, "chat_1")
         st.session_state.sessione_profilazione = None
         st.session_state.timestamp_inizio_chat = None
@@ -814,29 +807,17 @@ def pagina_chat_sperimentale(fase: str) -> None:
     _titolo(cfg["etichetta"])
     _render_step_flusso(fase)
     _istruzione(
-        "Stai per iniziare una conversazione con un assistente AI. "
-        "Rispondi liberamente e in modo naturale. "
-        f"Puoi concludere dopo almeno {TURNI_MINIMI_SPERIMENTALE} messaggi."
+        "Sta per iniziare una conversazione con un assistente AI. "
+        "Risponda liberamente e in modo naturale. "
+        f"Può concludere dopo almeno {TURNI_MINIMI_SPERIMENTALE} messaggi."
     )
 
     if st.session_state[chiave_sessione] is None:
         nfc_score, frequenza_ai  = _recupera_parametri_t0(pid)
         try:
             assegnamento = _recupera_assegnamento_chat(pid, numero_chat)
-            st.info(
-                f"Assegnamento recuperato: partecipante={pid}, "
-                f"chat={numero_chat}, "
-                f"modalità={assegnamento['modalita']}, "
-                f"dominio={assegnamento['dominio']}, "
-                f"LLM={assegnamento['llm']}"
-            )
         except (FileNotFoundError, ValueError, KeyError) as exc:
-            st.error(f"Configurazione degli assegnamenti incompleta: {exc}")
-            st.info(
-                "Controlla che config_assegnamenti.json si trovi nella stessa cartella "
-                "di Manipolazione.py e che contenga l'ID esatto del partecipante."
-            )
-            st.stop()
+            print(f"Configurazione degli assegnamenti incompleta: {exc}")
 
         with st.spinner(f"Avvio conversazione {numero_chat}/3..."):
             sessione = SessioneChat(
@@ -856,8 +837,6 @@ def pagina_chat_sperimentale(fase: str) -> None:
 
     sessione: SessioneChat = st.session_state[chiave_sessione]
 
-    _render_timer(st.session_state.timestamp_inizio_chat)
-
     if sessione.chiusura_automatica:
         _gestisci_conclusione_chat(pid, fase, sessione, chiave_sessione, automatica=True)
         return
@@ -869,7 +848,7 @@ def pagina_chat_sperimentale(fase: str) -> None:
     rimanenti = max(0, TURNI_MINIMI_SPERIMENTALE - turni)
 
     if not sessione.completabile:
-        st.info(f"Invia almeno altri **{rimanenti}** messaggio/i per poter concludere.")
+        st.info(f"Inviare almeno altri **{rimanenti}** messaggio/i per passare alla fase successiva")
 
     with st.form(f"form_chat_{fase}", clear_on_submit=True):
         testo = st.text_input(
@@ -899,7 +878,7 @@ def pagina_chat_sperimentale(fase: str) -> None:
     turni_rimasti_al_max = TURNI_MASSIMI_UTENTE - turni
     st.caption(
         f"Messaggi inviati: {turni} | minimo {TURNI_MINIMI_SPERIMENTALE} | "
-        f"massimo {TURNI_MASSIMI_UTENTE} (ancora {turni_rimasti_al_max})"
+        f"massimo {TURNI_MASSIMI_UTENTE}"
     )
 
 def pagina_t1() -> None:
@@ -908,41 +887,54 @@ def pagina_t1() -> None:
     _titolo("Questionario finale")
     _render_step_flusso("t1")
     _istruzione(
-        "Hai completato le tre conversazioni. "
-        "Ti chiediamo ora di rispondere ad alcune domande sulle tue opinioni attuali "
-        "e sull'esperienza che hai appena vissuto. "
-        "Non ci sono risposte giuste o sbagliate."
+        "Ha completato le tre conversazioni. Le chiediamo ora di rispondere ad alcune domande sulle sue opinioni attuali e sull'esperienza che ha appena vissuto."
     )
-
-    with st.expander(" Scala di risposta", expanded=False):
-        col_scala = st.columns(7)
-        for i, (val, etich) in enumerate(SCALA_LIKERT.items()):
-            col_scala[i].markdown(f"**{val}**  \n{etich}")
 
     risposte_likert: dict[str, int] = {}
     tutti_compilati = True
 
+    NUM_COLONNE = 2
+
     for id_sezione, titolo_ui, items in SEZIONI_T1:
-        st.subheader(titolo_ui)
 
-        # Contestualizzazione per sezione A ripetuta
-        if id_sezione == "A":
-            st.caption(
-                "Le stesse domande che hai risposto all'inizio. "
-                "Rispondi di nuovo in base alla tua opinione attuale."
-            )
+        with st.container(border=True):
+            st.subheader(titolo_ui)
 
-        for item in items:
-            valore = _render_item_likert(item, f"t1_{item.id}")
-            if valore is None:
-                tutti_compilati = False
-            else:
-                risposte_likert[item.id] = valore
-            st.markdown("")
+            # Contestualizzazione della sezione A:
+            # le domande vengono riproposte per confrontare
+            # le opinioni iniziali con quelle finali.
+            if id_sezione == "A":
+                st.caption(
+                    "Queste sono le stesse domande a cui ha risposto all'inizio. Risponda nuovamente in base alla sua opinione attuale"
+                )
+
+            # Suddivisione degli item in gruppi di due,
+            # per ottenere la stessa disposizione di pagina_t0().
+            righe_item = [
+                items[i:i + NUM_COLONNE]
+                for i in range(0, len(items), NUM_COLONNE)
+            ]
+
+            for gruppo in righe_item:
+                colonne = st.columns(NUM_COLONNE)
+
+                for col, item in zip(colonne, gruppo):
+                    with col:
+                        with st.container(border=True):
+                            valore = _render_item_likert(
+                                item,
+                                f"t1_{item.id}",
+                            )
+
+                            if valore is None:
+                                tutti_compilati = False
+                            else:
+                                risposte_likert[item.id] = valore
 
     st.markdown("---")
+
     if not tutti_compilati:
-        st.warning("Compila tutte le domande per continuare.")
+        st.warning("Compili tutte le domande per continuare.")
 
     if st.button(
         "Invia le risposte e concludi →",
@@ -955,13 +947,18 @@ def pagina_t1() -> None:
             risposte_likert=risposte_likert,
             fase="t1",
         )
+
         salva_risposte_questionario(pid, "t1", record)
+
         aggiorna_fase(pid, "t2")
+
         dati = st.session_state.partecipante_dati
         dati["fase_corrente"] = "t2"
         st.session_state.partecipante_dati = dati
+
         st.success("Risposte T1 salvate.")
         st.rerun()
+
 
 def pagina_t2() -> None:
     pid = st.session_state.partecipante_id
@@ -1004,7 +1001,7 @@ def pagina_t2() -> None:
     st.markdown("---")
 
     if not tutti_compilati:
-        st.warning("Compila tutte le domande per continuare.")
+        st.warning("Compili tutte le domande per continuare.")
 
     if st.button(
         "Invia le risposte e concludi",
@@ -1056,7 +1053,7 @@ def _gestisci_conclusione_chat(pid: str, fase: str, sessione: SessioneChat, chia
 
 def pagina_in_sviluppo(fase: str) -> None:
     st.subheader(f"Fase: {fase.replace('_', ' ').upper()}")
-    st.info("Questa sezione è in fase di sviluppo. Il ricercatore ti contatterà per le istruzioni successive.")
+    st.info("Questa sezione è in fase di sviluppo.")
     st.markdown("---")
     if st.button("← Torna alla selezione", use_container_width=True):
         st.session_state.partecipante_id   = None
@@ -1072,7 +1069,7 @@ def main() -> None:
 
     dati = leggi_partecipante(st.session_state.partecipante_id)
     if dati is None:
-        st.error("Partecipante non trovato. Torna alla selezione.")
+        print("Partecipante non trovato. Torna alla selezione.")
         if st.button("← Torna"):
             st.session_state.partecipante_id   = None
             st.session_state.partecipante_dati = None

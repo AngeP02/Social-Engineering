@@ -297,7 +297,6 @@ def storage_leggi_json(percorso: str) -> dict:
         return json.loads(contenuto)
 
     except Exception as e:
-        st.error(e)
         print(e)
         raise RuntimeError(
             f"Errore durante la lettura da Supabase Storage. "
