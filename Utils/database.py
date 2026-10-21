@@ -282,10 +282,28 @@ import io
 import json
 
 def storage_leggi_json(percorso: str) -> dict:
-    """Legge un file JSON dallo Storage Supabase. percorso es: 'Dati/schema_vuoto.json'"""
+    """Legge un file JSON dal bucket files di Supabase Storage."""
+
     client = ottieni_client()
-    risposta = client.storage.from_("files").download(percorso)
-    return json.loads(risposta)
+
+    try:
+        risposta = client.storage.from_("files").download(percorso)
+
+        if isinstance(risposta, bytes):
+            contenuto = risposta.decode("utf-8")
+        else:
+            contenuto = risposta
+
+        return json.loads(contenuto)
+
+    except Exception as e:
+        st.error(e)
+        print(e)
+        raise RuntimeError(
+            f"Errore durante la lettura da Supabase Storage. "
+            f"Bucket: files; percorso richiesto: {percorso}; "
+            f"tipo errore: {type(e).__name__}; dettaglio: {e}"
+        ) from e
 
 def storage_salva_json(percorso: str, dati: dict) -> None:
     """Salva/sovrascrive un file JSON sullo Storage Supabase."""
