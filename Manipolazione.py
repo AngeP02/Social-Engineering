@@ -126,21 +126,16 @@ def _recupera_parametri_t0(partecipante_id: str) -> tuple[float, str]:
 # File esterno agli script: contiene gli assegnamenti sperimentali per ogni partecipante.
 PERCORSO_CONFIG_ASSEGNAMENTI = Path(__file__).resolve().parent / "Utils" / "config_assegnamenti.json"
 
+from Utils.database import storage_leggi_json
+
 def _carica_config_assegnamenti() -> dict:
-    """Carica gli assegnamenti dal JSON esterno, senza imporre un numero fisso di partecipanti."""
-    if not PERCORSO_CONFIG_ASSEGNAMENTI.exists():
-        raise FileNotFoundError(
-            f"File degli assegnamenti non trovato: {PERCORSO_CONFIG_ASSEGNAMENTI}. "
-            "Crea il file partendo da config_assegnamenti_template.json."
-        )
     try:
-        with PERCORSO_CONFIG_ASSEGNAMENTI.open("r", encoding="utf-8") as file:
-            config = json.load(file)
-    except json.JSONDecodeError as exc:
-        raise ValueError(
-            f"Il file {PERCORSO_CONFIG_ASSEGNAMENTI.name} non è un JSON valido "
-            f"(riga {exc.lineno}, colonna {exc.colno}): {exc.msg}"
-        ) from exc
+        config = storage_leggi_json("config_assegnamenti.json")
+    except Exception as e:
+        raise FileNotFoundError(
+            f"File degli assegnamenti non trovato su Supabase Storage "
+            f"(config_assegnamenti.json). Caricalo nel bucket 'files'. Errore: {e}"
+        )
 
     partecipanti = config.get("partecipanti") if isinstance(config, dict) else None
     if not isinstance(partecipanti, dict):
