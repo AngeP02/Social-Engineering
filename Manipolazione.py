@@ -132,6 +132,7 @@ def _carica_config_assegnamenti() -> dict:
     try:
         config = storage_leggi_json("config_assegnamenti.json")
     except Exception as e:
+        print(e)
         raise FileNotFoundError(
             f"File degli assegnamenti non trovato su Supabase Storage "
             f"(config_assegnamenti.json). Caricalo nel bucket 'files'. Errore: {e}"
@@ -148,6 +149,8 @@ def _recupera_assegnamento_chat(partecipante_id: str, numero_chat: int) -> dict:
     partecipanti = _carica_config_assegnamenti()
     chiave = str(partecipante_id)
     if chiave not in partecipanti:
+        print( f"Nessun assegnamento configurato per l'ID partecipante '{chiave}'. "
+            f"Aggiungi questo ID in '{PERCORSO_CONFIG_ASSEGNAMENTI.name}'.")
         raise KeyError(
             f"Nessun assegnamento configurato per l'ID partecipante '{chiave}'. "
             f"Aggiungi questo ID in '{PERCORSO_CONFIG_ASSEGNAMENTI.name}'."
