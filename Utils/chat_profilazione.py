@@ -18,6 +18,7 @@ from Utils.prompts_profilazione import (
     TURNI_MINIMI_UTENTE,
     costruisci_prompt_profilazione,
     sintetizza_t0_per_prompt,
+    sintetizza_sr_per_prompt,
     _serializza_stato_profilo,
 )
 from Utils.database import (
@@ -220,18 +221,37 @@ class SessioneProfilazione:
         self._client = None
         self._prompt_sistema: str = ""
         self._riassunto_t0: str = ""
+        self._riassunto_sr: str = ""
 
     def inizia(self) -> str:
 
+        # --- T0 ---
         risposte_t0 = leggi_risposte_questionario(self.partecipante_id, "t0")
         self._riassunto_t0 = sintetizza_t0_per_prompt(risposte_t0)
+
+        # --- Self-report: leggi dal DB e precarica lo schema ---
+        risposte_sr = leggi_risposte_questionario(self.partecipante_id, "self_report")
+        self._riassunto_sr = sintetizza_sr_per_prompt(risposte_sr)
+
+        # Precarica lo schema con i dati SR se il profilo JSON esiste su disco;
+        # altrimenti usa lo schema vuoto (la chat li raccoglierà via conversazione).
+        _profilo_sr_path = _SCHEMA_PATH.parent / "profili_json_completi" / f"PERSONA_{self.partecipante_id}.json"
+        if _profilo_sr_path.exists():
+            with open(_profilo_sr_path, encoding="utf-8") as _f:
+                self.schema_corrente = json.load(_f)
+            # Sovrascrivi i metadati di sessione mantenendo i dati SR
+            self.schema_corrente["model"]     = CFG_MODELLO_PROFILAZIONE["model"]
+            self.schema_corrente["source_type"] = "llm_chat"
+            self.schema_corrente["condition"]   = "profiling_velato"
+            self.schema_corrente["meta"]["extraction_prompt_version"] = VERSIONE_PROMPT
 
         self._prompt_sistema = costruisci_prompt_profilazione(
             partecipante_id=self.partecipante_id,
             nfc_score=self.nfc_score,
             frequenza_ai=self.frequenza_ai,
             risposte_t0_summary=self._riassunto_t0,
-            profilo_corrente=None,
+            profilo_corrente=self.schema_corrente if risposte_sr else None,
+            risposte_sr_summary=self._riassunto_sr,
         )
         self._client = get_client(CFG_MODELLO_PROFILAZIONE)
         self.sessione_id = crea_sessione_chat(
@@ -299,6 +319,7 @@ class SessioneProfilazione:
             frequenza_ai=self.frequenza_ai,
             risposte_t0_summary=self._riassunto_t0,
             profilo_corrente=self.schema_corrente,
+            risposte_sr_summary=self._riassunto_sr,
         )
         self._prompt_sistema = nuovo_prompt
 

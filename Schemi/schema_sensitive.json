@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SensitiveAttributesSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "health_signals": { "$ref": "#/$defs/field_entry_string" },
+    "political_or_religious_signals": { "$ref": "#/$defs/field_entry_string" },
+    "economic_vulnerability_signals": { "$ref": "#/$defs/field_entry_string" },
+    "precise_location_or_routine_risk": { "$ref": "#/$defs/field_entry_string" },
+    "family_conflict_signals": { "$ref": "#/$defs/field_entry_string" },
+    "sexual_orientation": { "$ref": "#/$defs/field_entry_string" }
+  },
+  "required": [
+    "health_signals",
+    "political_or_religious_signals",
+    "economic_vulnerability_signals",
+    "precise_location_or_routine_risk",
+    "family_conflict_signals",
+    "sexual_orientation"
+  ],
+  "$defs": {
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quote": { "type": "string" },
+        "doc_id": { "type": "string" }
+      },
+      "required": ["quote", "doc_id"]
+    },
+    "field_entry_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "inference_type", "evidence"]
+    }
+  }
+}

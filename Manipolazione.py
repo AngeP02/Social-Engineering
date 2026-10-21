@@ -7,6 +7,8 @@ from typing import Optional
 
 import streamlit as st
 
+from Utils.sintetizza_profilo import sintetizza_e_salva_profilo
+
 from Utils.questionario_self_report import (          # [PATCH]
     SEZIONI_SR,                                        # [PATCH]
     SCALA_LIKERT_7,                                    # [PATCH]
@@ -184,16 +186,29 @@ def _recupera_assegnamento_chat(partecipante_id: str, numero_chat: int) -> dict:
 
 
 def _render_messaggi(messaggi: list[dict]) -> None:
-    """Mostra la conversazione usando i componenti nativi di Streamlit."""
+    """Mostra la conversazione con uno stile chatbot pulito ed elegante."""
     for msg in messaggi:
         ruolo = msg.get("ruolo", "")
         contenuto = msg.get("contenuto", "")
+        timestamp = msg.get("timestamp")  # Opzionale, se presente nel dict
+
         if ruolo == "assistente":
-            with st.chat_message("assistant"):
+            # Avatar '🤖' o 'IA' o un'icona neutra minimalista
+            with st.chat_message("assistant", avatar="🤖"):
                 st.markdown(contenuto)
+                if timestamp:
+                    st.caption(f"_{timestamp}_")
+
         elif ruolo == "utente":
-            with st.chat_message("user"):
+            # Avatar per il docente/ricercatore
+            with st.chat_message("user", avatar="👤"):
                 st.markdown(contenuto)
+                if timestamp:
+                    st.caption(f"_{timestamp}_")
+
+        elif ruolo == "sistema":
+            # Per eventuali istruzioni di contesto o avvisi automatici
+            st.caption(f"ℹ️ *{contenuto}*")
 
 
 def _render_step_flusso(fase_corrente: str) -> None:
@@ -457,6 +472,7 @@ def pagina_consenso() -> None:
 Il presente studio ha l'obiettivo di analizzare le dinamiche dell'interazione uomo-AI.
 
 **In cosa consiste la partecipazione:**
+- Compilazione un breve questionario conoscitivo.
 - Compilazione di un breve questionario preliminare sulle opinioni relative ai domini di studio.
 - Svolgimento di una conversazione iniziale di orientamento con un assistente virtuale.
 - Completamento di tre sessioni di interazione guidata con assistenti AI.
@@ -711,9 +727,8 @@ def pagina_profilazione() -> None:
     _titolo("Conversazione con l’assistente")
     _render_step_flusso("profilazione")
     _istruzione(
-        "Stai per iniziare una breve conversazione con un assistente AI. "
-        "Rispondi liberamente e in modo naturale. "
-        "Non esistono risposte giuste o sbagliate."
+        "Sta per iniziare una breve conversazione con un assistente AI. "
+        "Risponda liberamente e in modo naturale. "
     )
 
     if st.session_state.sessione_profilazione is None:
@@ -737,12 +752,12 @@ def pagina_profilazione() -> None:
     rimanenti = max(0, TURNI_MINIMI_PROFILAZIONE - turni)
 
     if not sessione.completabile:
-        st.info(f"Invia almeno altri **{rimanenti}** messaggio/i per continuare.")
+        st.info(f"Inviare almeno altri **{rimanenti}** messaggio/i per passare alla fase successiva.")
 
     with st.form("form_chat_profilazione", clear_on_submit=True):
         testo = st.text_input(
             "Il tuo messaggio",
-            placeholder="Scrivi qui la tua risposta...",
+            placeholder="Scriva qui la sua risposta...",
             label_visibility="collapsed",
         )
         col_inv, col_fin = st.columns([3, 1])
@@ -762,6 +777,15 @@ def pagina_profilazione() -> None:
 
     if concludi and sessione.completabile:
         sessione.chiudi()
+        try:
+            sintetizza_e_salva_profilo(
+                partecipante_id=pid,
+                sessione_id=sessione.sessione_id,  # ← passa l'ID sessione già aperta
+                salva_su_db=True,
+            )
+        except Exception as _e:
+            st.warning(f"Sintesi profilo non riuscita ({_e}). ...")
+
         aggiorna_fase(pid, "chat_1")
         st.session_state.sessione_profilazione = None
         st.session_state.timestamp_inizio_chat = None

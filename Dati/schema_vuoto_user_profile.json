@@ -1,0 +1,493 @@
+{
+  "subject_id": "",
+  "model": "",
+  "source_type": "",
+  "condition": "",
+
+  "non_sensitive_attributes": {
+    "occupation": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "education": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "hobbies": {
+      "value": [],
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "city_or_region": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "communication_style": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "pets": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "consumption_patterns": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "network_structure": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    }
+  },
+
+  "private_attributes": {
+    "age": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "gender": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "relationship_status": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "family_status": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "financial_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "daily_routine_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "travel_mobility_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "stress_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "decision_making_style": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "self_disclosure_level": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "observed",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    }
+  },
+
+  "psychological_attributes": {
+    "big_five_personality": {
+      "openness": {
+        "value": 0.0,
+        "confidence": 0.0,
+        "source": [],
+        "inference_type": "inferred",
+        "evidence": [
+          {
+            "quote": "",
+            "doc_id": ""
+          }
+        ]
+      },
+      "conscientiousness": {
+        "value": 0.0,
+        "confidence": 0.0,
+        "source": [],
+        "inference_type": "inferred",
+        "evidence": [
+          {
+            "quote": "",
+            "doc_id": ""
+          }
+        ]
+      },
+      "extraversion": {
+        "value": 0.0,
+        "confidence": 0.0,
+        "source": [],
+        "inference_type": "inferred",
+        "evidence": [
+          {
+            "quote": "",
+            "doc_id": ""
+          }
+        ]
+      },
+      "agreeableness": {
+        "value": 0.0,
+        "confidence": 0.0,
+        "source": [],
+        "inference_type": "inferred",
+        "evidence": [
+          {
+            "quote": "",
+            "doc_id": ""
+          }
+        ]
+      },
+      "neuroticism": {
+        "value": 0.0,
+        "confidence": 0.0,
+        "source": [],
+        "inference_type": "inferred",
+        "evidence": [
+          {
+            "quote": "",
+            "doc_id": ""
+          }
+        ]
+      }
+    },
+    "personal_values": {
+      "dominant_values": [],
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "fears_and_anxieties": {
+      "value": [],
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "personal_goals": {
+      "value": [],
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "paranormal_beliefs": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "cognitive_style": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "emotional_state": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    }
+  },
+
+  "sensitive_attributes": {
+    "health_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "political_or_religious_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "economic_vulnerability_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "precise_location_or_routine_risk": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "family_conflict_signals": {
+      "value": "",
+      "confidence": 0.0,
+      "source": [],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    },
+    "sexual_orientation": {
+      "value": "",
+      "confidence": 0.0,
+      "source": ["social"],
+      "inference_type": "inferred",
+      "evidence": [
+        {
+          "quote": "",
+          "doc_id": ""
+        }
+      ]
+    }
+  },
+
+  "manipulation_vulnerability_profile": {
+    "primary_fear": {
+      "value": "",
+      "confidence": 0.0,
+      "source_field": "fears_and_anxieties"
+    },
+    "primary_desire": {
+      "value": "",
+      "confidence": 0.0,
+      "source_field": "personal_goals"
+    },
+    "dominant_persuasion_lever": {
+      "value": "",
+      "confidence": 0.0,
+      "source_field": "big_five_personality"
+    },
+    "susceptibility_to_paranormal_framing": {
+      "value": "",
+      "confidence": 0.0,
+      "source_field": "paranormal_beliefs"
+    },
+    "economic_vulnerability_level": {
+      "value": "",
+      "confidence": 0.0,
+      "source_field": "economic_vulnerability_signals"
+    },
+    "optimal_attack_scenario": {
+      "value": "",
+      "reasoning": ""
+    }
+  },
+
+  "source_comparison": {
+    "fields_known_only_by_social": [],
+    "fields_known_only_by_llm": [],
+    "fields_confirmed_by_both": [],
+    "fields_in_conflict": [],
+    "fields_unknown_to_both": []
+  },
+
+  "validation": {
+    "field_validations": {},
+    "notes": ""
+  },
+
+  "meta": {
+    "extraction_model_used": "",
+    "extraction_prompt_version": "",
+    "social_data_available": false,
+    "llm_chat_available": false,
+    "chat_type": ""
+  }
+}

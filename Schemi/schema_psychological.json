@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PsychologicalAttributesSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "big_five_personality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "openness": { "$ref": "#/$defs/field_entry_number" },
+        "conscientiousness": { "$ref": "#/$defs/field_entry_number" },
+        "extraversion": { "$ref": "#/$defs/field_entry_number" },
+        "agreeableness": { "$ref": "#/$defs/field_entry_number" },
+        "neuroticism": { "$ref": "#/$defs/field_entry_number" }
+      },
+      "required": ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+    },
+    "personal_values": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dominant_values": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown", ""] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["dominant_values", "confidence", "source", "inference_type", "evidence"]
+    },
+    "fears_and_anxieties": { "$ref": "#/$defs/field_entry_array" },
+    "personal_goals": { "$ref": "#/$defs/field_entry_array" },
+    "paranormal_beliefs": { "$ref": "#/$defs/field_entry_string" },
+    "cognitive_style": { "$ref": "#/$defs/field_entry_string" },
+    "emotional_state": { "$ref": "#/$defs/field_entry_string" }
+  },
+  "required": [
+    "big_five_personality",
+    "personal_values",
+    "fears_and_anxieties",
+    "personal_goals",
+    "paranormal_beliefs",
+    "cognitive_style",
+    "emotional_state"
+  ],
+  "$defs": {
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quote": { "type": "string" },
+        "doc_id": { "type": "string" }
+      },
+      "required": ["quote", "doc_id"]
+    },
+    "field_entry_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "inference_type", "evidence"]
+    },
+    "field_entry_number": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "inference_type", "evidence"]
+    },
+    "field_entry_array": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "inference_type", "evidence"]
+    }
+  }
+}

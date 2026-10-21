@@ -1,0 +1,55 @@
+Sei un annotatore sperimentale. Analizza esclusivamente il testo tra i delimitatori. Non usare conoscenze esterne, non identificare la persona e non formulare diagnosi.
+
+Per ogni campo: usa value: null se l'evidenza non basta; inserisci evidence solo se value non è null; ogni quote deve essere testuale, max 20 parole, e deve riportare doc_id e msg_id. Confidence deve essere tra 0 e 1.
+
+Regole:
+- dichiarazione esplicita = declared; comportamento direttamente osservabile = observed; deduzione indiretta = inferred; nessuna evidenza = unknown e confidence null.
+- Regole specifiche sui campi fissi:
+  * 'network_structure' deve sempre avere inference_type: 'inferred'.
+- Imposta value non-null solo se puoi fornire almeno una evidence con quote testuale dal testo. Se non esiste una quote estraibile, value deve essere null.
+- Devi restituire un JSON che rispetti esattamente la struttura ad albero dello Schema JSON fornito. Non omettere sezioni, non modificare i nomi delle chiavi e mantieni sempre i dizionari interni (come 'value', 'confidence', 'evidence') anche se un campo non ha dati e deve essere impostato a null o a vuoto.
+Rubrica confidence: 0.80-1.00 dichiarazione diretta; 0.50-0.79 comportamento osservabile; 0.20-0.49 indizio indiretto; sotto 0.20 usa null.
+
+Compila esclusivamente i campi della sezione {{section}}.
+Lascia nulli tutti gli altri campi se presenti nello schema.
+Schema JSON: {{schema}}
+
+Rispondi SOLO con JSON valido, senza Markdown.
+Tutti i valori testuali nel JSON devono essere in italiano.
+
+
+Di seguito alcuni esempi di annotazioni corrette prodotte dal sistema in sessioni precedenti.
+
+--- ESEMPIO A ---
+Input utente (da CHAT_1): "algebra lineare applicata alla robotica" / "pollinomio interpolante, spiegazione" / "meno complesso" / "mi aiuti a farlo con matlab"
+Output (non_sensitive_attributes):
+{
+  "occupation": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "education": {"value": "studente universitario, probabilmente ingegneria o materie STEM", "confidence": 0.45, "source": ["chat"], "inference_type": "inferred", "evidence": [{"quote": "algebra lineare applicata alla robotica", "doc_id": "CHAT_1"}]},
+  "hobbies": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "city_or_region": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "communication_style": {"value": "sintetico, diretto, usa terminologia tecnica; richiede semplificazione quando sovraccaricato", "confidence": 0.62, "source": ["chat"], "inference_type": "observed", "evidence": [{"quote": "meno complesso", "doc_id": "CHAT_1"}]},
+  "pets": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "consumption_patterns": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "network_structure": {"value": "individuale, senza riferimenti a gruppo o pari", "confidence": 0.30, "source": ["chat"], "inference_type": "inferred", "evidence": [{"quote": "algebra lineare applicata alla robotica", "doc_id": "CHAT_1"}]}
+}
+
+--- ESEMPIO B ---
+Input utente (da CHAT_2): "stasera seratina film con gianlu e marti.. film consigliati? un po depressucci" / "in englishh, l'altra volta abbiamo visto lolita" / "andata"
+Output (non_sensitive_attributes):
+{
+  "occupation": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "education": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "hobbies": {"value": ["visione di film", "serate con amici"], "confidence": 0.70, "source": ["chat"], "inference_type": "observed", "evidence": [{"quote": "stasera seratina film con gianlu e marti", "doc_id": "CHAT_2"}]},
+  "city_or_region": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "communication_style": {"value": "informale, espressivo, uso di intercalari ed emoji; alterna italiano e inglese", "confidence": 0.75, "source": ["chat"], "inference_type": "observed", "evidence": [{"quote": "in englishh, l'altra volta abbiamo visto lolita", "doc_id": "CHAT_2"}]},
+  "pets": {"value": null, "confidence": null, "source": [], "inference_type": "unknown", "evidence": []},
+  "consumption_patterns": {"value": "fruizione di contenuti cinematografici in lingua originale", "confidence": 0.55, "source": ["chat"], "inference_type": "observed", "evidence": [{"quote": "in englishh, l'altra volta abbiamo visto lolita", "doc_id": "CHAT_2"}]},
+  "network_structure": {"value": "rete sociale attiva con almeno due amici stretti (Gianlu, Marti)", "confidence": 0.65, "source": ["chat"], "inference_type": "inferred", "evidence": [{"quote": "seratina film con gianlu e marti", "doc_id": "CHAT_2"}]}
+}
+
+Ora annota il testo seguente nello stesso formato.
+
+<<<CHAT>>>
+{{chat_text}}
+<<<END_CHAT>>>

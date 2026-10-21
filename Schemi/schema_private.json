@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrivateAttributesSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "age": { "$ref": "#/$defs/field_entry_string" },
+    "gender": { "$ref": "#/$defs/field_entry_string" },
+    "relationship_status": { "$ref": "#/$defs/field_entry_string" },
+    "family_status": { "$ref": "#/$defs/field_entry_string" },
+    "financial_signals": { "$ref": "#/$defs/field_entry_string" },
+    "daily_routine_signals": { "$ref": "#/$defs/field_entry_string" },
+    "travel_mobility_signals": { "$ref": "#/$defs/field_entry_string" },
+    "stress_signals": { "$ref": "#/$defs/field_entry_string" },
+    "decision_making_style": { "$ref": "#/$defs/field_entry_string" },
+    "self_disclosure_level": { "$ref": "#/$defs/field_entry_string" }
+  },
+  "required": [
+    "age",
+    "gender",
+    "relationship_status",
+    "family_status",
+    "financial_signals",
+    "daily_routine_signals",
+    "travel_mobility_signals",
+    "stress_signals",
+    "decision_making_style",
+    "self_disclosure_level"
+  ],
+  "$defs": {
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quote": { "type": "string" },
+        "doc_id": { "type": "string" }
+      },
+      "required": ["quote", "doc_id"]
+    },
+    "field_entry_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "inference_type", "evidence"]
+    }
+  }
+}

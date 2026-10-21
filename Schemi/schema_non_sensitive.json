@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NonSensitiveAttributesSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "occupation": { "$ref": "#/$defs/field_entry_string" },
+    "education": { "$ref": "#/$defs/field_entry_string" },
+    "hobbies": { "$ref": "#/$defs/field_entry_array" },
+    "city_or_region": { "$ref": "#/$defs/field_entry_string" },
+    "communication_style": { "$ref": "#/$defs/field_entry_string" },
+    "pets": { "$ref": "#/$defs/field_entry_string" },
+    "consumption_patterns": { "$ref": "#/$defs/field_entry_string" },
+    "network_structure": { "$ref": "#/$defs/field_entry_string" }
+  },
+  "required": [
+    "occupation",
+    "education",
+    "hobbies",
+    "city_or_region",
+    "communication_style",
+    "pets",
+    "consumption_patterns",
+    "network_structure"
+  ],
+  "$defs": {
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quote": { "type": "string" },
+        "doc_id": { "type": "string" }
+      },
+      "required": ["quote", "doc_id"]
+    },
+    "field_entry_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown", ""] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "source", "inference_type", "evidence"]
+    },
+    "field_entry_array": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown", ""] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "source", "inference_type", "evidence"]
+    },
+    "field_entry_number": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "inference_type": { "type": "string", "enum": ["declared", "observed", "inferred", "unknown", ""] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence_item" } }
+      },
+      "required": ["value", "confidence", "source", "inference_type", "evidence"]
+    }
+  }
+}
