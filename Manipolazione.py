@@ -7,6 +7,7 @@ from typing import Optional
 
 import streamlit as st
 
+from Utils.questionario_t2 import SEZIONI_T2
 from Utils.sintetizza_profilo import sintetizza_e_salva_profilo
 
 from Utils.questionario_self_report import (
@@ -25,6 +26,7 @@ from Utils.database import (
     segna_t0_completato,
     aggiorna_fase,
     salva_risposte_questionario,
+    segna_t1_completato
 )
 from Utils.questionario_t0 import (
     SEZIONE_A,
@@ -37,6 +39,10 @@ from Utils.questionario_t1 import (
     SEZIONI_T1,
     SCALA_LIKERT,
     serializza_per_db_t1,
+)
+from Utils.questionario_t2 import (
+SEZIONI_T2,
+serializza_per_db_t2
 )
 from Utils.chat_profilazione import (
     SessioneProfilazione,
@@ -949,7 +955,7 @@ def pagina_t1() -> None:
         )
 
         salva_risposte_questionario(pid, "t1", record)
-
+        segna_t1_completato(pid)
         aggiorna_fase(pid, "t2")
 
         dati = st.session_state.partecipante_dati
@@ -960,56 +966,103 @@ def pagina_t1() -> None:
         st.rerun()
 
 
-def pagina_t2() -> None:
-    pid = st.session_state.partecipante_id
-
+def pagina_attesa_t2() -> None:
+    """Schermata mostrata mentre il partecipante aspetta le 72h."""
     _titolo("Questionario di follow-up")
     _render_step_flusso("t2")
 
-    _istruzione(
-        "Rispondi alle seguenti domande in base alla tua opinione attuale e alla "
-        "tua esperienza. Non ci sono risposte giuste o sbagliate."
+    dati = st.session_state.partecipante_dati
+    ts_sblocco = dati.get("timestamp_t2_sbloccato")
+
+    if ts_sblocco:
+        from datetime import datetime, timezone
+        sblocco_dt = datetime.fromisoformat(ts_sblocco)
+        sblocco_locale = sblocco_dt.strftime("%d/%m/%Y alle %H:%M")
+        info_data = f"\n\n📅 Sarà disponibile dal: **{sblocco_locale} (UTC)**"
+    else:
+        info_data = ""
+
+    st.info(
+        "Ha completato la prima parte dello studio. Grazie!\n\n"
+        "Il questionario di follow-up sarà disponibile 72 ore dopo il completamento del questionario finale.\n\n"
+        "Riceverà una email di promemoria quando sarà il momento di tornare qui per completare l'ultima fase "
     )
 
-    with st.expander("Scala di risposta", expanded=False):
-        colscala = st.columns(7)
-        for i, (val, etich) in enumerate(SCALA_LIKERT.items()):
-            colscala[i].markdown(f"**{val}**  \n{etich}")
+def pagina_t2() -> None:
+    pid = st.session_state.partecipante_id
+    dati = st.session_state.partecipante_dati
+
+    # --- Controllo sblocco ---
+    from datetime import datetime, timezone
+
+    adesso = datetime.now(timezone.utc)
+    ts_sblocco = dati.get("timestamp_t2_sbloccato")
+
+    sbloccato_da_tempo = (
+        ts_sblocco is not None
+        and adesso >= datetime.fromisoformat(ts_sblocco)
+    )
+    sbloccato_manualmente = dati.get(
+        "t2_sbloccato_manualmente", False
+    )
+
+    if not (sbloccato_da_tempo or sbloccato_manualmente):
+        pagina_attesa_t2()
+        return
+
+    # --- Intestazione ---
+    _titolo("Questionario di follow-up")
+    _render_step_flusso("t2")
 
     risposte_likert: dict[str, int] = {}
     tutti_compilati = True
+    NUM_COLONNE = 2
 
-    for id_sezione, titolo_ui, items in SEZIONI_T1:
-        st.subheader(titolo_ui)
+    # --- Domande organizzate per sezione ---
+    for id_sezione, titolo_ui, items in SEZIONI_T2:
 
-        if id_sezione == "A":
-            st.caption(
-                "Le stesse domande che hai già risposto. "
-                "Rispondi in base alla tua opinione attuale."
-            )
+        with st.container(border=True):
+            st.subheader(titolo_ui)
 
-        for item in items:
-            valore = _render_item_likert(item, f"t2_{item.id}")
+            if id_sezione == "A":
+                st.caption(
+                    "Queste sono le stesse domande a cui ha risposto all'inizio. Risponda nuovamente in base alla sua opinione attuale"
+                )
 
-            if valore is None:
-                tutti_compilati = False
-            else:
-                risposte_likert[item.id] = valore
+            righe_item = [
+                items[i:i + NUM_COLONNE]
+                for i in range(0, len(items), NUM_COLONNE)
+            ]
 
-        st.markdown("")
+            for gruppo in righe_item:
+                colonne = st.columns(NUM_COLONNE)
+
+                for col, item in zip(colonne, gruppo):
+                    with col:
+                        with st.container(border=True):
+                            valore = _render_item_likert(
+                                item,
+                                f"t2_{item.id}",
+                            )
+
+                            if valore is None:
+                                tutti_compilati = False
+                            else:
+                                risposte_likert[item.id] = valore
 
     st.markdown("---")
 
     if not tutti_compilati:
         st.warning("Compili tutte le domande per continuare.")
 
+    # --- Invio e conclusione ---
     if st.button(
         "Invia le risposte e concludi",
         type="primary",
         use_container_width=True,
         disabled=not tutti_compilati,
     ):
-        record = serializza_per_db_t1(
+        record = serializza_per_db_t2(
             partecipante_id=pid,
             risposte_likert=risposte_likert,
             fase="t2",
@@ -1026,10 +1079,10 @@ def pagina_t2() -> None:
         st.success("Risposte T2 salvate.")
         st.rerun()
 
+
 def pagina_completato() -> None:
     _titolo("Studio completato")
-    st.success("Hai completato tutte le fasi dello studio. Grazie per la tua partecipazione!")
-    st.info("Puoi chiudere questa pagina. Il ricercatore ti contatterà per il debriefing.")
+    st.success("Ha completato tutte le fasi dello studio. Grazie per la sua partecipazione!")
 
 def _gestisci_conclusione_chat(pid: str, fase: str, sessione: SessioneChat, chiave_sessione: str, automatica: bool) -> None:
     sessione.chiudi()
