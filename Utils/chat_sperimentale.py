@@ -52,6 +52,8 @@ def _parse_metriche(risposta_raw: str) -> Optional[dict]:
                 pass
     return None
 
+from Utils.database import storage_leggi_json, leggi_profilo
+
 def carica_profilo_json(partecipante_id: str) -> dict:
     candidati = [
         f"output/{partecipante_id}/profilo_completo.json",
@@ -65,11 +67,15 @@ def carica_profilo_json(partecipante_id: str) -> dict:
         except Exception:
             continue
 
+    # Fallback: tabella "profili" nel database
+    profilo = leggi_profilo(partecipante_id)
+    if profilo:
+        return profilo
+
     raise FileNotFoundError(
         f"Nessun profilo trovato su Storage per '{partecipante_id}'. "
         f"Percorsi cercati: {candidati}"
     )
-
 CFG_MODELLO_SPERIMENTALE = {
     "controllo": {
         "provider": "openrouter",

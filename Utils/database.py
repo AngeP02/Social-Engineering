@@ -304,5 +304,6 @@ def storage_file_esiste(percorso: str) -> bool:
     try:
         client.storage.from_("files").download(percorso)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"[storage] file non trovato: {percorso} → {e}")  # ← debug
         return False

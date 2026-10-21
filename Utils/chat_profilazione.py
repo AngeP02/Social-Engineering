@@ -244,13 +244,10 @@ class SessioneProfilazione:
         _profilo_sr_path = f"Dati/profili_json_completi/PERSONA_{self.partecipante_id}.json"
         if storage_file_esiste(_profilo_sr_path):
             self.schema_corrente = storage_leggi_json(_profilo_sr_path)
-        if _profilo_sr_path.exists():
-            with open(_profilo_sr_path, encoding="utf-8") as _f:
-                self.schema_corrente = json.load(_f)
             # Sovrascrivi i metadati di sessione mantenendo i dati SR
-            self.schema_corrente["model"]     = CFG_MODELLO_PROFILAZIONE["model"]
+            self.schema_corrente["model"] = CFG_MODELLO_PROFILAZIONE["model"]
             self.schema_corrente["source_type"] = "llm_chat"
-            self.schema_corrente["condition"]   = "profiling_velato"
+            self.schema_corrente["condition"] = "profiling_velato"
             self.schema_corrente["meta"]["extraction_prompt_version"] = VERSIONE_PROMPT
 
         self._prompt_sistema = costruisci_prompt_profilazione(
