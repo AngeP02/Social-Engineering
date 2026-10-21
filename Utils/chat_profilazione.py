@@ -28,21 +28,24 @@ from Utils.database import (
     salva_aggiornamento_profilazione,
     leggi_risposte_questionario,
 )
+from Utils.database import storage_leggi_json, storage_file_esiste
 
-_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "Dati" / "schema_vuoto_user_profile.json"
 
+#_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "Dati" / "schema_vuoto_user_profile.json"
+
+_SCHEMA_PATH = "Dati/schema_vuoto_user_profile.json"
 
 def _carica_schema_vuoto() -> dict:
-    if _SCHEMA_PATH.exists():
-        with open(_SCHEMA_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    return {
-        "subject_id": "", "model": "", "source_type": "llm_chat", "condition": "profiling",
-        "non_sensitive_attributes": {}, "private_attributes": {},
-        "psychological_attributes": {}, "sensitive_attributes": {},
-        "manipulation_vulnerability_profile": {},
-        "meta": {"extraction_prompt_version": VERSIONE_PROMPT},
-    }
+    try:
+        return storage_leggi_json(_SCHEMA_PATH)
+    except Exception:
+        return {
+            "subject_id": "", "model": "", "source_type": "llm_chat", "condition": "profiling",
+            "non_sensitive_attributes": {}, "private_attributes": {},
+            "psychological_attributes": {}, "sensitive_attributes": {},
+            "manipulation_vulnerability_profile": {},
+            "meta": {"extraction_prompt_version": VERSIONE_PROMPT},
+        }
 
 CFG_MODELLO_PROFILAZIONE = {
     "provider": "openrouter",
@@ -237,7 +240,10 @@ class SessioneProfilazione:
 
         # Precarica lo schema con i dati SR se il profilo JSON esiste su disco;
         # altrimenti usa lo schema vuoto (la chat li raccoglierà via conversazione).
-        _profilo_sr_path = _SCHEMA_PATH.parent / "profili_json_completi" / f"PERSONA_{self.partecipante_id}.json"
+        #_profilo_sr_path = _SCHEMA_PATH.parent / "profili_json_completi" / f"PERSONA_{self.partecipante_id}.json"
+        _profilo_sr_path = f"Dati/profili_json_completi/PERSONA_{self.partecipante_id}.json"
+        if storage_file_esiste(_profilo_sr_path):
+            self.schema_corrente = storage_leggi_json(_profilo_sr_path)
         if _profilo_sr_path.exists():
             with open(_profilo_sr_path, encoding="utf-8") as _f:
                 self.schema_corrente = json.load(_f)

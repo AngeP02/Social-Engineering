@@ -28,6 +28,8 @@ _RE_METRICHE = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 
+from Utils.database import storage_leggi_json
+
 
 def estrai_testo_pulito_sperimentale(risposta: str) -> str:
     return _RE_METRICHE.sub("", risposta).strip()
@@ -51,27 +53,21 @@ def _parse_metriche(risposta_raw: str) -> Optional[dict]:
     return None
 
 def carica_profilo_json(partecipante_id: str) -> dict:
-    """
-    Cerca il profilo completo del partecipante nella cartella di output
-    o, come fallback, nei vecchi percorsi.
-    """
     candidati = [
-        # Percorso corretto basato sulla struttura output/COGNOME_NOME/profilo_completo.json
-        _DIR_OUTPUT / partecipante_id / "profilo_completo.json",
-        # Vecchi percorsi di fallback nel caso servano
-        _DIR_PROFILI_VECCHIA / f"PERSONA_{partecipante_id}.json",
-        _DIR_PROFILI_VECCHIA / f"{partecipante_id}.json",
-        _DIR_PROFILI_VECCHIA / "PERSONA_ESEMPIO.json",
+        f"output/{partecipante_id}/profilo_completo.json",
+        f"Dati/profili_json_completi/PERSONA_{partecipante_id}.json",
+        f"Dati/profili_json_completi/{partecipante_id}.json",
+        "Dati/profili_json_completi/PERSONA_ESEMPIO.json",
     ]
-
     for percorso in candidati:
-        if percorso.exists():
-            with open(percorso, encoding="utf-8") as f:
-                return json.load(f)
+        try:
+            return storage_leggi_json(percorso)
+        except Exception:
+            continue
 
     raise FileNotFoundError(
-        f"Nessun profilo JSON trovato per il partecipante '{partecipante_id}'. "
-        f"Percorsi cercati: {[str(c) for c in candidati]}"
+        f"Nessun profilo trovato su Storage per '{partecipante_id}'. "
+        f"Percorsi cercati: {candidati}"
     )
 
 CFG_MODELLO_SPERIMENTALE = {

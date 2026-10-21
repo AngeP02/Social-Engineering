@@ -277,3 +277,32 @@ def leggi_tutti_persuasion_lift() -> list[dict]:
         .execute()
     )
     return risultato.data or []
+
+import io
+import json
+
+def storage_leggi_json(percorso: str) -> dict:
+    """Legge un file JSON dallo Storage Supabase. percorso es: 'Dati/schema_vuoto.json'"""
+    client = ottieni_client()
+    risposta = client.storage.from_("files").download(percorso)
+    return json.loads(risposta)
+
+def storage_salva_json(percorso: str, dati: dict) -> None:
+    """Salva/sovrascrive un file JSON sullo Storage Supabase."""
+    client = ottieni_client()
+    contenuto = json.dumps(dati, ensure_ascii=False, indent=2).encode("utf-8")
+    # upsert=True sovrascrive se esiste già
+    client.storage.from_("files").upload(
+        percorso,
+        contenuto,
+        {"content-type": "application/json", "upsert": "true"},
+    )
+
+def storage_file_esiste(percorso: str) -> bool:
+    """Controlla se un file esiste nello Storage."""
+    client = ottieni_client()
+    try:
+        client.storage.from_("files").download(percorso)
+        return True
+    except Exception:
+        return False

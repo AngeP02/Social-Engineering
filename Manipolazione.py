@@ -9,11 +9,11 @@ import streamlit as st
 
 from Utils.sintetizza_profilo import sintetizza_e_salva_profilo
 
-from Utils.questionario_self_report import (          # [PATCH]
-    SEZIONI_SR,                                        # [PATCH]
-    SCALA_LIKERT_7,                                    # [PATCH]
-    serializza_per_db_sr,                              # [PATCH]
-    compila_campi_profilo,                             # [PATCH]
+from Utils.questionario_self_report import (
+    SEZIONI_SR,
+    SCALA_LIKERT_7,
+    serializza_per_db_sr,
+    compila_campi_profilo,
 )
 
 import json
