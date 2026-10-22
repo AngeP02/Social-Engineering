@@ -415,7 +415,7 @@ def _render_item_sr(item) -> object:  # [PATCH]
 def pagina_selezione() -> None:
     st.title("Studio sperimentale sull'interazione uomo-macchina")
     st.info("La durata complessiva del test è di circa 15 minuti")
-    st.markdown(""""
+    st.markdown("""
     **Istruzioni per l'accesso:**
     1. Selezioni **esclusivamente il suo nome e cognome**.
     2. Clicchi sul pulsante **Accesso** per iniziare la sessione.
