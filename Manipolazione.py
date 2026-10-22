@@ -420,7 +420,7 @@ def _scroll_top() -> None:
 
 def pagina_selezione() -> None:
     st.title("Studio sperimentale sull'interazione uomo-macchina")
-    st.info("La durata complessiva del test è di circa 15 minuti")
+    st.info("La durata complessiva del test è di circa 20 minuti")
     st.markdown("""
     **Istruzioni per l'accesso:**
     1. Selezioni **esclusivamente il suo nome e cognome**.
