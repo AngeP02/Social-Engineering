@@ -42,6 +42,7 @@ VERSIONE_PROMPT = "profilazione_v4"   # bump per tracciare la versione corretta
 
 TURNI_MINIMI_UTENTE = 8
 
+
 CLUSTER_TEMATICI = [
     "stress_e_lavoro",
     "relazioni_e_famiglia",
