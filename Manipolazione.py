@@ -411,6 +411,11 @@ def _render_item_sr(item) -> object:  # [PATCH]
             st.caption(SCALA_LIKERT_7[7])
         return valore
 
+def _scroll_top() -> None:
+    components.html(
+        "<script>window.parent.document.querySelector('section.main').scrollTo(0, 0);</script>",
+        height=0,
+    )
 
 def pagina_selezione() -> None:
     st.title("Studio sperimentale sull'interazione uomo-macchina")
@@ -606,6 +611,7 @@ def pagina_self_report() -> None:
 def pagina_t0() -> None:
     pid = st.session_state.partecipante_id
 
+    _scroll_top()
     _titolo("Questionario iniziale")
     _render_step_flusso("t0")
     _istruzione(
@@ -738,7 +744,7 @@ def pagina_t0() -> None:
 
 def pagina_profilazione() -> None:
     pid = st.session_state.partecipante_id
-
+    _scroll_top()
     _titolo("Conversazione con l’assistente")
     _render_step_flusso("profilazione")
     _istruzione(
@@ -811,6 +817,7 @@ def pagina_profilazione() -> None:
     st.caption(f"Messaggi inviati: {turni} / minimo {TURNI_MINIMI_PROFILAZIONE}")
 
 def pagina_chat_sperimentale(fase: str) -> None:
+    _scroll_top()
     pid  = st.session_state.partecipante_id
     cfg  = CHAT_CONFIG[fase]
     chiave_sessione = f"sessione_{fase}"
@@ -894,6 +901,7 @@ def pagina_chat_sperimentale(fase: str) -> None:
     )
 
 def pagina_t1() -> None:
+    _scroll_top()
     pid = st.session_state.partecipante_id
 
     _titolo("Questionario finale")
@@ -973,6 +981,7 @@ def pagina_t1() -> None:
 
 
 def pagina_attesa_t2() -> None:
+    _scroll_top()
     """Schermata mostrata mentre il partecipante aspetta le 72h."""
     _titolo("Questionario di follow-up")
     _render_step_flusso("t2")
@@ -995,6 +1004,7 @@ def pagina_attesa_t2() -> None:
     )
 
 def pagina_t2() -> None:
+    _scroll_top()
     pid = st.session_state.partecipante_id
     dati = st.session_state.partecipante_dati
 
