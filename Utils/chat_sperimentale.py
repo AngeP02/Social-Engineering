@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -248,18 +249,22 @@ class SessioneChat:
             metriche=metriche_aggregate,
         )
 
-
     def _chiama_modello(self) -> str:
-
-        if hasattr(self._client, "send_chat"):
-            risposta = self._client.send_chat(self.messaggi_storia)
-        else:
-            prompt_fallback = "\n\n".join(
-                f"[{m['role'].upper()}]\n{m['content']}"
-                for m in self.messaggi_storia
-            )
-            risposta = self._client.send_prompt(prompt_fallback)
-        return risposta.text
+        for tentativo in range(3):
+            try:
+                if hasattr(self._client, "send_chat"):
+                    risposta = self._client.send_chat(self.messaggi_storia)
+                else:
+                    prompt_fallback = "\n\n".join(
+                        f"[{m['role'].upper()}]\n{m['content']}"
+                        for m in self.messaggi_storia
+                    )
+                    risposta = self._client.send_prompt(prompt_fallback)
+                return risposta.text
+            except Exception as e:
+                if tentativo == 2:
+                    raise
+                time.sleep(2 ** tentativo)  # 1s, poi 2s
 
     def _aggiorna_metriche(self, metriche: Optional[dict], turno: int) -> None:
 
