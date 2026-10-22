@@ -16,6 +16,7 @@ from Utils.questionario_self_report import (
     serializza_per_db_sr,
     compila_campi_profilo,
 )
+import streamlit.components.v1 as components
 
 import json
 from Utils.database import (
