@@ -40,7 +40,7 @@ from Utils.questionario_self_report import (
 
 VERSIONE_PROMPT = "profilazione_v4"   # bump per tracciare la versione corretta
 
-TURNI_MINIMI_UTENTE = 7
+TURNI_MINIMI_UTENTE = 8
 
 
 CLUSTER_TEMATICI = [
