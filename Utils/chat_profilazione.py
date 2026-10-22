@@ -339,11 +339,21 @@ class SessioneProfilazione:
                         for m in self.messaggi_storia
                     )
                     risposta = self._client.send_prompt(prompt_fallback)
-                return risposta.text
+
+                # Controlla che la risposta non sia un messaggio di errore
+                testo = risposta.text
+                if not testo or len(testo) < 10:
+                    raise ValueError("Risposta vuota dal modello")
+                return testo
+
             except Exception as e:
                 if tentativo == 2:
-                    raise
-                time.sleep(2 ** tentativo)  # 1s, poi 2s
+                    # Messaggio neutro all'utente invece di crash
+                    return (
+                        "Mi dispiace, si è verificato un problema tecnico. "
+                        "Riprova tra qualche secondo."
+                    )
+                time.sleep(2 ** tentativo)
 
     def _aggiorna_da_risposta(self, risposta_raw: str, turno: int) -> None:
 
