@@ -197,7 +197,7 @@ SEZIONE_Q: list[ItemSR] = [
            "La sicurezza e la stabilità nella mia vita quotidiana vengono prima di tutto.",
            campo_profilo="personal_values", sottocampo="sicurezza"),
     ItemSR("R8",  "R",
-           "Tengo molto ad avere successo e anche gli altri riconoscano i miei risultati.",
+           "Tengo molto ad avere successo e anche gli altri riconoscono i miei risultati.",
            campo_profilo="personal_values", sottocampo="riuscita"),
     ItemSR("R9",  "R",
            "Voglio avere influenza sulle decisioni e sulle persone che mi circondano.",
